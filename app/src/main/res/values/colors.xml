@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <!-- Primary -->
+    <color name="primary">#2563EB</color>
+    <color name="primary_dark">#1D4ED8</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- Background -->
+    <color name="background">#F8FAFC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F1F5F9</color>
+
+    <!-- Text -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_disabled">#94A3B8</color>
+
+    <!-- Chat -->
+    <color name="user_message">#2563EB</color>
+    <color name="on_user_message">#FFFFFF</color>
+
+    <color name="ai_message">#E2E8F0</color>
+    <color name="on_ai_message">#0F172A</color>
+
+    <!-- Borders / Dividers -->
+    <color name="border">#CBD5E1</color>
+    <color name="divider">#E2E8F0</color>
+
+    <!-- Status -->
+    <color name="success">#16A34A</color>
+    <color name="error">#DC2626</color>
+    <color name="warning">#D97706</color>
+
+    <!-- Dark Theme -->
+    <color name="dark_background">#0F172A</color>
+    <color name="dark_surface">#1E293B</color>
+    <color name="dark_surface_variant">#334155</color>
+    <color name="dark_text_primary">#F8FAFC</color>
+    <color name="dark_text_secondary">#94A3B8</color>
+
+</resources>
