@@ -10,7 +10,7 @@ import retrofit2.http.Path
 
 interface LearnFlowApi {
 
-    @POST("api/chat")
+    @POST("chat")
     suspend fun sendMessage(
         @Body request: ChatRequest
     ): ChatResponse
