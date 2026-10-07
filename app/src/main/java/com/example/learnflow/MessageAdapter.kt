@@ -9,12 +9,10 @@ import androidx.recyclerview.widget.RecyclerView
 class MessageAdapter(
     private val messages: List<MessageAdapterModel>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
     companion object {
         private const val USER_MESSAGE = 1
         private const val AI_MESSAGE = 2
     }
-
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].isUser) {
             USER_MESSAGE
@@ -22,28 +20,21 @@ class MessageAdapter(
             AI_MESSAGE
         }
     }
-
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
     ): RecyclerView.ViewHolder {
-
         return if (viewType == USER_MESSAGE) {
-
             val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.message_card, parent, false)
+                .inflate(R.layout.message_user ,parent, false)
 
             UserMessageViewHolder(view)
-
         } else {
-
             val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.message_card, parent, false)
-
+                .inflate(R.layout.message_ai, parent, false)
             AiMessageViewHolder(view)
         }
     }
-
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,
         position: Int
@@ -56,20 +47,16 @@ class MessageAdapter(
             holder.message.text = message.message
         }
     }
-
     override fun getItemCount(): Int {
         return messages.size
     }
-
     class UserMessageViewHolder(itemView: View) :
         RecyclerView.ViewHolder(itemView) {
 
         val message: TextView = itemView.findViewById(R.id.txtMessage)
     }
-
     class AiMessageViewHolder(itemView: View) :
         RecyclerView.ViewHolder(itemView) {
-
         val message: TextView = itemView.findViewById(R.id.txtMessage)
     }
 }

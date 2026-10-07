@@ -4,11 +4,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/main"
     android:background="@color/dark_background">
 
+    <!-- Header -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -58,9 +59,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <View
-                    android:layout_width="7dp"
-                    android:layout_height="7dp"/>
+
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -74,38 +73,48 @@
 
         </LinearLayout>
 
-
     </LinearLayout>
 
+    <!-- Header divider -->
     <View
         android:id="@+id/headerDivider"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_marginTop="16dp"
-        android:background="@color/dark_surface_variant"
         android:alpha="0.45"
+        android:background="@color/dark_surface_variant"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header" />
 
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    <!-- Messages area -->
+    <LinearLayout
+        android:id="@+id/messageContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:overScrollMode="never"
-        android:paddingStart="14dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="16dp"
+        android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@id/inputContainer"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toBottomOf="@id/headerDivider">
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:paddingStart="14dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="8dp" />
+
+        <include
+            android:id="@+id/typingIndicator"
+            layout="@layout/loader" />
+    </LinearLayout>
+
+    <!-- Input -->
     <LinearLayout
         android:id="@+id/inputContainer"
         android:layout_width="0dp"
@@ -128,8 +137,8 @@
             android:id="@+id/btnAttach"
             android:layout_width="38dp"
             android:layout_height="38dp"
-            android:contentDescription="Attach document"
             android:background="@drawable/ic_add"
+            android:contentDescription="Attach document"
             android:padding="12dp" />
 
         <EditText
@@ -146,8 +155,8 @@
             android:maxLines="4"
             android:minHeight="46dp"
             android:paddingStart="8dp"
-            android:paddingEnd="8dp"
             android:paddingTop="8dp"
+            android:paddingEnd="8dp"
             android:paddingBottom="8dp"
             android:textColor="@color/dark_text_primary"
             android:textColorHint="@color/dark_text_secondary"
@@ -158,9 +167,9 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_send"
             android:contentDescription="Send message"
-            android:padding="12dp" />
+            android:padding="12dp"
+            android:src="@drawable/ic_send" />
 
     </LinearLayout>
 

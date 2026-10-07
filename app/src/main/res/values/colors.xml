@@ -32,6 +32,7 @@
     <!-- Status -->
     <color name="success">#16A34A</color>
     <color name="error">#DC2626</color>
+    <color name="orange">#FF9800</color>
     <color name="warning">#D97706</color>
 
     <!-- Dark Theme -->
