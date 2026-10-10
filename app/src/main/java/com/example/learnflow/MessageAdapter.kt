@@ -1,15 +1,15 @@
+
 package com.example.learnflow
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import io.noties.markwon.Markwon
 
 class MessageAdapter(
-    private val messages: List<MessageAdapterModel>,
-    private val markwon: Markwon
+    private val messages: List<MessageAdapterModel>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -32,20 +32,24 @@ class MessageAdapter(
 
         val inflater = LayoutInflater.from(parent.context)
 
-        return if (viewType == USER_MESSAGE) {
-            val view = inflater.inflate(
-                R.layout.message_user,
-                parent,
-                false
-            )
-            UserMessageViewHolder(view)
-        } else {
-            val view = inflater.inflate(
-                R.layout.message_ai,
-                parent,
-                false
-            )
-            AiMessageViewHolder(view)
+        return when (viewType) {
+            USER_MESSAGE -> {
+                val view = inflater.inflate(
+                    R.layout.message_user,
+                    parent,
+                    false
+                )
+                UserMessageViewHolder(view)
+            }
+
+            else -> {
+                val view = inflater.inflate(
+                    R.layout.message_ai,
+                    parent,
+                    false
+                )
+                AiMessageViewHolder(view)
+            }
         }
     }
 
@@ -57,33 +61,43 @@ class MessageAdapter(
 
         when (holder) {
             is UserMessageViewHolder -> {
-                holder.message.text = message.message
+                holder.bind(message.message)
             }
 
             is AiMessageViewHolder -> {
-                markwon.setMarkdown(
-                    holder.message,
-                    message.message
-                )
+                holder.bind(message.message)
             }
         }
     }
 
-    override fun getItemCount(): Int {
-        return messages.size
-    }
+    override fun getItemCount(): Int = messages.size
 
     class UserMessageViewHolder(
         itemView: View
     ) : RecyclerView.ViewHolder(itemView) {
 
-        val message: TextView = itemView.findViewById(R.id.txtMessage)
+        private val message: TextView =
+            itemView.findViewById(R.id.txtMessage)
+
+        fun bind(text: String) {
+            message.text = text
+        }
     }
 
     class AiMessageViewHolder(
         itemView: View
     ) : RecyclerView.ViewHolder(itemView) {
 
-        val message: TextView = itemView.findViewById(R.id.txtMessage)
+        private val message: WebView =
+            itemView.findViewById(R.id.txtMessage)
+
+        private val renderer = MathMessageRenderer(
+            itemView.context,
+            message
+        )
+
+        fun bind(text: String) {
+            renderer.render(text)
+        }
     }
 }

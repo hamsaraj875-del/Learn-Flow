@@ -1,12 +1,17 @@
 package com.example.learnflow
 
 import android.animation.ValueAnimator
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -16,8 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
-import io.noties.markwon.Markwon
-import io.noties.markwon.ext.tables.TablePlugin
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
@@ -27,6 +30,9 @@ class Chat : AppCompatActivity() {
     private lateinit var messageAdapter: MessageAdapter
 
     private var typingAnimator: ValueAnimator? = null
+    private var pdfBytes : ByteArray?=null
+
+    private var selectedPdfUri: Uri? = null
 
     private val messages = mutableListOf<MessageAdapterModel>()
 
@@ -48,19 +54,37 @@ class Chat : AppCompatActivity() {
 
         val btnSend = findViewById<ImageView>(R.id.btnSend)
         val editMessage = findViewById<EditText>(R.id.editMessage)
-        val name = findViewById<TextView>(R.id.name)
+        val txtAttachmentName = findViewById<TextView>(R.id.txtAttachmentName);
+        val btnRemoveAttachment = findViewById<ImageView>(R.id.btnRemoveAttachment);
+        val attachmentContainer = findViewById<LinearLayout>(R.id.attachmentContainer);
         val typingIndicator = findViewById<View>(R.id.typingIndicator)
+        val documentView = findViewById<View>(R.id.documentView);
         val chatRepository = ChatRepository(RetrofitClient.api)
+        val btnAttach = findViewById<ImageButton>(R.id.btnAttach)
 
         recyclerView = findViewById(R.id.recyclerView)
-        val markwon = Markwon.builder(this)
-            .usePlugin(TablePlugin.create(this))
-            .build()
-
-        messageAdapter = MessageAdapter(messages, markwon)
+        messageAdapter = MessageAdapter(messages)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = messageAdapter
 
+
+
+        val documentPicker =
+            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    handleSelectedDocument(uri,txtAttachmentName,attachmentContainer,documentView);
+                }
+            }
+
+        btnAttach.setOnClickListener {
+            documentPicker.launch(arrayOf("application/pdf"))
+        }
+
+        btnRemoveAttachment.setOnClickListener {
+            selectedPdfUri = null
+            attachmentContainer.visibility = View.GONE
+            documentView.visibility = View.GONE;
+        }
 
         btnSend.setOnClickListener {
             val mes = editMessage.text.toString()
@@ -78,6 +102,7 @@ class Chat : AppCompatActivity() {
             scrollToBottom()
             lifecycleScope.launch {
                 typingIndicator.visibility = View.VISIBLE
+                btnSend.isEnabled = false;
                 startTypingAnimation()
                 try {
                     val response = chatRepository.sendMessage(
@@ -102,10 +127,10 @@ class Chat : AppCompatActivity() {
                         )
                     )
                     messageAdapter.notifyItemInserted(messages.lastIndex)
-                    scrollToBottom()
-                    name.text = e.toString()
+                    scrollToBottom();
                 } finally {
                     stopTypingAnimation()
+                    btnSend.isEnabled = true;
                     typingIndicator.visibility = View.GONE
                 }
             }
@@ -183,5 +208,41 @@ class Chat : AppCompatActivity() {
         typingAnimator?.cancel()
         typingAnimator = null
         super.onDestroy()
+    }
+
+    private fun handleSelectedDocument(uri: Uri,txtAttachmentName:TextView,attachmentContainer:LinearLayout,documentView:View) {
+        selectedPdfUri = uri
+
+        if(uri!=null){
+            pdfBytes = getPdfBytes(uri);
+            if(pdfBytes!=null){
+                Toast.makeText(this@Chat,"Size of the pdf ${pdfBytes!!.size}", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        val cursor = contentResolver.query(
+            uri,
+            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )
+
+        val fileName = cursor?.use {
+            if (it.moveToFirst()) {
+                it.getString(0)
+            } else {
+                "Selected document.pdf"
+            }
+        } ?: "Selected document.pdf"
+        txtAttachmentName.text = fileName
+        attachmentContainer.visibility = View.VISIBLE
+        documentView.visibility = View.VISIBLE;
+    }
+
+    private fun getPdfBytes(uri: Uri): ByteArray? {
+        return contentResolver.openInputStream(uri)?.use { inputStream ->
+            inputStream.readBytes()
+        }
     }
 }

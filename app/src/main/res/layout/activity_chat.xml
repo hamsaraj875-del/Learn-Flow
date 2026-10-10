@@ -3,13 +3,11 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dark_background">
 
-    <!-- Header -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -52,30 +50,18 @@
                 android:textSize="19sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="AI Assistant"
-                    android:textColor="@color/dark_text_secondary"
-                    android:textSize="12sp" />
-
-            </LinearLayout>
+                android:text="AI Assistant"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="12sp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Header divider -->
     <View
         android:id="@+id/headerDivider"
         android:layout_width="0dp"
@@ -87,7 +73,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header" />
 
-    <!-- Messages area -->
     <LinearLayout
         android:id="@+id/messageContainer"
         android:layout_width="0dp"
@@ -113,13 +98,12 @@
         <include
             android:id="@+id/typingIndicator"
             layout="@layout/loader"
-            android:layout_margin="30dp"
             android:layout_width="match_parent"
-            android:layout_height="30dp" />
+            android:layout_height="30dp"
+            android:layout_margin="30dp" />
 
     </LinearLayout>
 
-    <!-- Input -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/inputCard"
         android:layout_width="0dp"
@@ -133,58 +117,125 @@
         app:strokeColor="@color/dark_surface_variant"
         app:strokeWidth="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <LinearLayout
             android:id="@+id/inputContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="62dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingTop="6dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="6dp">
+            android:orientation="vertical"
+            android:padding="6dp">
 
-            <ImageButton
-                android:id="@+id/btnAttach"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@android:color/transparent"
-                android:padding="10dp"
-                android:src="@drawable/ic_add"
-                android:backgroundTint="@color/dark_text_secondary"
-                android:contentDescription="Attach document" />
-
-            <EditText
-                android:id="@+id/editMessage"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/attachmentContainer"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                android:minHeight="46dp"
-                android:maxLines="4"
+                android:layout_marginBottom="4dp"
                 android:gravity="center_vertical"
-                android:background="@android:color/transparent"
-                android:hint="Ask Learn Flow..."
-                android:textColor="@color/dark_text_primary"
-                android:textColorHint="@color/dark_text_secondary"
-                android:textSize="15sp"
-                android:inputType="textCapSentences|textMultiLine"
-                android:padding="8dp" />
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:visibility="gone">
 
-            <ImageButton
-                android:id="@+id/btnSend"
-                android:layout_width="46dp"
-                android:layout_height="46dp"
-                android:background="@android:color/transparent"
-                android:padding="10dp"
-                android:src="@drawable/ic_send"
-                android:backgroundTint="@color/orange"
-                android:contentDescription="Send message" />
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="PDF document"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_document" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/txtAttachmentName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="middle"
+                        android:maxLines="1"
+                        android:textColor="@color/dark_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PDF document"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/btnRemoveAttachment"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:contentDescription="Remove attachment"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_close"
+                    app:tint="@color/dark_text_secondary" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/documentView"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="4dp"
+                android:background="@color/text_secondary"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnAttach"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Attach document"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_attach"
+                    app:tint="@color/dark_text_secondary" />
+
+                <EditText
+                    android:id="@+id/editMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@android:color/transparent"
+                    android:gravity="center_vertical"
+                    android:hint="Ask Learn Flow..."
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="4"
+                    android:minHeight="46dp"
+                    android:padding="8dp"
+                    android:textColor="@color/dark_text_primary"
+                    android:textColorHint="@color/dark_text_secondary"
+                    android:textSize="15sp" />
+
+                <ImageButton
+                    android:id="@+id/btnSend"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Send message"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_send"
+                    app:tint="@color/orange" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
