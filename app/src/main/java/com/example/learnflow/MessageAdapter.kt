@@ -58,10 +58,9 @@ class MessageAdapter(
         position: Int
     ) {
         val message = messages[position]
-
         when (holder) {
             is UserMessageViewHolder -> {
-                holder.bind(message.message)
+                holder.bind(message)
             }
 
             is AiMessageViewHolder -> {
@@ -71,7 +70,6 @@ class MessageAdapter(
     }
 
     override fun getItemCount(): Int = messages.size
-
     class UserMessageViewHolder(
         itemView: View
     ) : RecyclerView.ViewHolder(itemView) {
@@ -79,8 +77,29 @@ class MessageAdapter(
         private val message: TextView =
             itemView.findViewById(R.id.txtMessage)
 
-        fun bind(text: String) {
-            message.text = text
+        private val documentPreview: View =
+            itemView.findViewById(R.id.documentPreview)
+
+        private val documentDivider: View =
+            itemView.findViewById(R.id.documentDivider)
+
+        private val txtDocumentName: TextView =
+            itemView.findViewById(R.id.txtDocumentName)
+
+        fun bind(item: MessageAdapterModel) {
+            message.text = item.message
+
+            val hasDocument = item.documentName != null
+
+            documentPreview.visibility =
+                if (hasDocument) View.VISIBLE else View.GONE
+
+            documentDivider.visibility =
+                if (hasDocument) View.VISIBLE else View.GONE
+
+            if (hasDocument) {
+                txtDocumentName.text = item.documentName
+            }
         }
     }
 

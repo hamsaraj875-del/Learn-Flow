@@ -4,7 +4,7 @@ import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
-import okhttp3.Response
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Multipart
@@ -24,9 +24,11 @@ interface LearnFlowApi {
         @Path("conversationId") conversationId: String
     ): MessageResponse
 
+
     @Multipart
-    @POST("api/documents")
+    @POST("document")
     suspend fun uploadDocument(
-        @Part document: MultipartBody.Part
+        @Part pdf: MultipartBody.Part,
+        @Part("question") question: RequestBody
     ): ChatResponse
 }

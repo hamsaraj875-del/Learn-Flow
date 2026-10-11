@@ -19,9 +19,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.learnflow.data.model.ChatRequest
+import com.example.learnflow.data.model.DocumentModel
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.math.sin
 
 class Chat : AppCompatActivity() {
@@ -30,7 +35,8 @@ class Chat : AppCompatActivity() {
     private lateinit var messageAdapter: MessageAdapter
 
     private var typingAnimator: ValueAnimator? = null
-    private var pdfBytes : ByteArray?=null
+    private var pdfBytes : ByteArray?=null;
+    private var selectedPdfName : String?=null;
 
     private var selectedPdfUri: Uri? = null
 
@@ -88,52 +94,106 @@ class Chat : AppCompatActivity() {
 
         btnSend.setOnClickListener {
             val mes = editMessage.text.toString()
-            if (mes.isBlank()) {
+            if (mes.isBlank() && pdfBytes==null) {
                 return@setOnClickListener
             }
-            messages.add(
-                MessageAdapterModel(
-                    true,
-                    mes
-                )
-            )
             editMessage.setText("")
-            messageAdapter.notifyItemInserted(messages.lastIndex)
-            scrollToBottom()
-            lifecycleScope.launch {
-                typingIndicator.visibility = View.VISIBLE
-                btnSend.isEnabled = false;
-                startTypingAnimation()
-                try {
-                    val response = chatRepository.sendMessage(
-                        ChatRequest(
-                            conversationId = 1,
-                            question = mes
+
+            if (pdfBytes != null) {
+                messages.add(MessageAdapterModel(true, mes, selectedPdfName))
+                messageAdapter.notifyItemInserted(messages.lastIndex)
+                attachmentContainer.visibility = View.GONE
+                documentView.visibility = View.GONE;
+                scrollToBottom()
+                val pdfBody = pdfBytes!!.toRequestBody(
+                    "application/pdf".toMediaType()
+                )
+                val pdfPart = MultipartBody.Part.createFormData(
+                    "pdf",
+                    selectedPdfName ?: "document.pdf",
+                    pdfBody
+                )
+                val questionBody = mes.toRequestBody(
+                    "text/plain".toMediaType()
+                )
+                lifecycleScope.launch {
+                    typingIndicator.visibility = View.VISIBLE
+                    btnSend.isEnabled = false
+                    startTypingAnimation()
+                    try {
+                        val response = chatRepository.uploadDocument(
+                            pdfPart,
+                            questionBody
                         )
-                    )
-                    messages.add(
-                        MessageAdapterModel(
-                            false,
-                            response.response
+                        messages.add(MessageAdapterModel(false, response.response))
+                        messageAdapter.notifyItemInserted(messages.lastIndex)
+                        scrollToBottom()
+                        pdfBytes = null
+                        selectedPdfName = null
+                        selectedPdfUri = null
+                        selectedPdfName = "";
+                        txtAttachmentName.text = ""
+                    } catch (e: Exception) {
+                        messages.removeAt(messages.lastIndex)
+                        editMessage.setText(mes.toString());
+                        attachmentContainer.visibility = View.VISIBLE
+                        documentView.visibility = View.VISIBLE;
+                        messageAdapter.notifyItemRemoved(messages.lastIndex + 1)
+                        messages.add(
+                            MessageAdapterModel(
+                                false,
+                                "Error occurred while connecting to the server."
+                            )
                         )
-                    )
-                    messageAdapter.notifyItemInserted(messages.lastIndex)
-                    scrollToBottom()
-                } catch (e: Exception) {
-                    messages.add(
-                        MessageAdapterModel(
-                            false,
-                            "Error occurred while connecting to the server."
-                        )
-                    )
-                    messageAdapter.notifyItemInserted(messages.lastIndex)
-                    scrollToBottom();
-                } finally {
-                    stopTypingAnimation()
-                    btnSend.isEnabled = true;
-                    typingIndicator.visibility = View.GONE
+                        messageAdapter.notifyItemInserted(messages.lastIndex)
+                        scrollToBottom()
+                    } finally {
+                        stopTypingAnimation()
+                        btnSend.isEnabled = true
+                        typingIndicator.visibility = View.GONE
+                    }
                 }
+            }else{
+                messages.add(MessageAdapterModel(true, mes))
+                messageAdapter.notifyItemInserted(messages.lastIndex)
+                scrollToBottom()
+                lifecycleScope.launch {
+                    typingIndicator.visibility = View.VISIBLE
+                    btnSend.isEnabled = false;
+                    startTypingAnimation()
+                    try {
+                        val response = chatRepository.sendMessage(
+                            ChatRequest(
+                                conversationId = 1,
+                                question = mes
+                            )
+                        )
+                        messages.add(
+                            MessageAdapterModel(
+                                false,
+                                response.response
+                            )
+                        )
+                        messageAdapter.notifyItemInserted(messages.lastIndex)
+                        scrollToBottom()
+                    } catch (e: Exception) {
+                        messages.add(
+                            MessageAdapterModel(
+                                false,
+                                "Error occurred while connecting to the server."
+                            )
+                        )
+                        messageAdapter.notifyItemInserted(messages.lastIndex)
+                        scrollToBottom();
+                    } finally {
+                        stopTypingAnimation()
+                        btnSend.isEnabled = true;
+                        typingIndicator.visibility = View.GONE
+                    }
+                }
+
             }
+
         }
     }
 
@@ -235,6 +295,8 @@ class Chat : AppCompatActivity() {
                 "Selected document.pdf"
             }
         } ?: "Selected document.pdf"
+
+        selectedPdfName = fileName;
         txtAttachmentName.text = fileName
         attachmentContainer.visibility = View.VISIBLE
         documentView.visibility = View.VISIBLE;
