@@ -13,8 +13,10 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,8 +37,8 @@ class Chat : AppCompatActivity() {
     private lateinit var messageAdapter: MessageAdapter
 
     private var typingAnimator: ValueAnimator? = null
-    private var pdfBytes : ByteArray?=null;
-    private var selectedPdfName : String?=null;
+    private var pdfBytes : ByteArray?=null
+    private var selectedPdfName : String?=null
 
     private var selectedPdfUri: Uri? = null
 
@@ -60,13 +62,17 @@ class Chat : AppCompatActivity() {
 
         val btnSend = findViewById<ImageView>(R.id.btnSend)
         val editMessage = findViewById<EditText>(R.id.editMessage)
-        val txtAttachmentName = findViewById<TextView>(R.id.txtAttachmentName);
-        val btnRemoveAttachment = findViewById<ImageView>(R.id.btnRemoveAttachment);
-        val attachmentContainer = findViewById<LinearLayout>(R.id.attachmentContainer);
+        val txtAttachmentName = findViewById<TextView>(R.id.txtAttachmentName)
+        val btnRemoveAttachment = findViewById<ImageView>(R.id.btnRemoveAttachment)
+        val attachmentContainer = findViewById<LinearLayout>(R.id.attachmentContainer)
         val typingIndicator = findViewById<View>(R.id.typingIndicator)
-        val documentView = findViewById<View>(R.id.documentView);
+        val documentView = findViewById<View>(R.id.documentView)
         val chatRepository = ChatRepository(RetrofitClient.api)
         val btnAttach = findViewById<ImageButton>(R.id.btnAttach)
+        val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
+        val btnSidebar = findViewById<ImageButton>(R.id.btnSidebar)
+        val btnCloseSidebar = findViewById<ImageButton>(R.id.btnCloseSidebar);
+
 
         recyclerView = findViewById(R.id.recyclerView)
         messageAdapter = MessageAdapter(messages)
@@ -78,9 +84,21 @@ class Chat : AppCompatActivity() {
         val documentPicker =
             registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
-                    handleSelectedDocument(uri,txtAttachmentName,attachmentContainer,documentView);
+                    handleSelectedDocument(uri,txtAttachmentName,attachmentContainer,documentView)
                 }
             }
+
+        btnSidebar.setOnClickListener {
+            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                drawerLayout.closeDrawer(GravityCompat.START)
+            } else {
+                drawerLayout.openDrawer(GravityCompat.START)
+            }
+        }
+
+        btnCloseSidebar.setOnClickListener{
+            drawerLayout.closeDrawer(GravityCompat.START);
+        }
 
         btnAttach.setOnClickListener {
             documentPicker.launch(arrayOf("application/pdf"))
@@ -89,7 +107,7 @@ class Chat : AppCompatActivity() {
         btnRemoveAttachment.setOnClickListener {
             selectedPdfUri = null
             attachmentContainer.visibility = View.GONE
-            documentView.visibility = View.GONE;
+            documentView.visibility = View.GONE
         }
 
         btnSend.setOnClickListener {
@@ -103,7 +121,7 @@ class Chat : AppCompatActivity() {
                 messages.add(MessageAdapterModel(true, mes, selectedPdfName))
                 messageAdapter.notifyItemInserted(messages.lastIndex)
                 attachmentContainer.visibility = View.GONE
-                documentView.visibility = View.GONE;
+                documentView.visibility = View.GONE
                 scrollToBottom()
                 val pdfBody = pdfBytes!!.toRequestBody(
                     "application/pdf".toMediaType()
@@ -131,14 +149,14 @@ class Chat : AppCompatActivity() {
                         pdfBytes = null
                         selectedPdfName = null
                         selectedPdfUri = null
-                        selectedPdfName = "";
+                        selectedPdfName = ""
                         txtAttachmentName.text = ""
                     } catch (e: Exception) {
                         messages.removeAt(messages.lastIndex)
-                        editMessage.setText(mes.toString());
+                        editMessage.setText(mes.toString())
                         attachmentContainer.visibility = View.VISIBLE
-                        documentView.visibility = View.VISIBLE;
-                        messageAdapter.notifyItemRemoved(messages.lastIndex + 1)
+                        documentView.visibility = View.VISIBLE
+                        messageAdapter.notifyItemRemoved(messages.lastIndex)
                         messages.add(
                             MessageAdapterModel(
                                 false,
@@ -159,7 +177,7 @@ class Chat : AppCompatActivity() {
                 scrollToBottom()
                 lifecycleScope.launch {
                     typingIndicator.visibility = View.VISIBLE
-                    btnSend.isEnabled = false;
+                    btnSend.isEnabled = false
                     startTypingAnimation()
                     try {
                         val response = chatRepository.sendMessage(
@@ -177,6 +195,9 @@ class Chat : AppCompatActivity() {
                         messageAdapter.notifyItemInserted(messages.lastIndex)
                         scrollToBottom()
                     } catch (e: Exception) {
+                        editMessage.setText(mes.toString())
+                        messages.removeAt(messages.lastIndex)
+                        messageAdapter.notifyItemRemoved(messages.lastIndex)
                         messages.add(
                             MessageAdapterModel(
                                 false,
@@ -184,10 +205,10 @@ class Chat : AppCompatActivity() {
                             )
                         )
                         messageAdapter.notifyItemInserted(messages.lastIndex)
-                        scrollToBottom();
+                        scrollToBottom()
                     } finally {
                         stopTypingAnimation()
-                        btnSend.isEnabled = true;
+                        btnSend.isEnabled = true
                         typingIndicator.visibility = View.GONE
                     }
                 }
@@ -274,9 +295,9 @@ class Chat : AppCompatActivity() {
         selectedPdfUri = uri
 
         if(uri!=null){
-            pdfBytes = getPdfBytes(uri);
+            pdfBytes = getPdfBytes(uri)
             if(pdfBytes!=null){
-                Toast.makeText(this@Chat,"Size of the pdf ${pdfBytes!!.size}", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this@Chat,"Size of the pdf ${pdfBytes!!.size}", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -296,10 +317,10 @@ class Chat : AppCompatActivity() {
             }
         } ?: "Selected document.pdf"
 
-        selectedPdfName = fileName;
+        selectedPdfName = fileName
         txtAttachmentName.text = fileName
         attachmentContainer.visibility = View.VISIBLE
-        documentView.visibility = View.VISIBLE;
+        documentView.visibility = View.VISIBLE
     }
 
     private fun getPdfBytes(uri: Uri): ByteArray? {

@@ -32,6 +32,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("io.noties.markwon:core:4.6.2")
     implementation("io.noties.markwon:ext-latex:4.6.2")
     implementation("io.noties.markwon:inline-parser:4.6.2")
