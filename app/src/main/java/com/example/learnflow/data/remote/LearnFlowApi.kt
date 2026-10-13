@@ -2,6 +2,7 @@ package com.example.learnflow.data.remote
 
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
+import com.example.learnflow.data.model.LoginResponse
 import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -18,6 +19,17 @@ interface LearnFlowApi {
     suspend fun sendMessage(
         @Body request: ChatRequest
     ): ChatResponse
+
+
+    @POST("new_chat")
+    suspend fun createNewChat(
+        @Body userId:String
+    ):ChatResponse
+
+
+    @POST("user/loggedIn")
+    suspend fun userIsLoggedIn(): LoginResponse;
+
 
     @GET("api/conversations/{conversationId}/messages")
     suspend fun getMessages(
