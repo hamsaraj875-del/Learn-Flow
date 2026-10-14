@@ -39,14 +39,14 @@ class MainActivity : AppCompatActivity() {
             try{
                 var response = chatRepository.userIsLoggedIn();
                 if(!response.success){
-                    var intent = Intent(this@MainActivity,Login::class.java);
+                    var intent = Intent(this@MainActivity,Promo::class.java);
                     startActivity(intent);
                 }else{
                     progressBar.visibility = View.GONE;
                     btn.visibility = View.VISIBLE;
                 }
             }catch(e:Exception){
-                var intent = Intent(this@MainActivity,Login::class.java);
+                var intent = Intent(this@MainActivity,Promo::class.java);
                 startActivity(intent);
             }finally{
                 progressBar.visibility = View.GONE;

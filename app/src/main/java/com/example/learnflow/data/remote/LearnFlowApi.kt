@@ -2,7 +2,10 @@ package com.example.learnflow.data.remote
 
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
+import com.example.learnflow.data.model.LoginRequest
 import com.example.learnflow.data.model.LoginResponse
+import com.example.learnflow.data.model.OtpRequest
+import com.example.learnflow.data.model.SignUpRequest
 import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -14,6 +17,21 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface LearnFlowApi {
+
+    @POST("user/login")
+    suspend fun login(
+        @Body request: LoginRequest
+    ):LoginResponse;
+
+    @POST("user/signUp")
+    suspend fun signUp(
+        @Body request: SignUpRequest
+    ):LoginResponse
+
+    @POST("user/otp")
+    suspend fun otp(
+        @Body request: OtpRequest
+    ):LoginResponse
 
     @POST("chat")
     suspend fun sendMessage(

@@ -41,6 +41,10 @@
             android:exported="false"
             android:theme="@style/Theme.LearnFlow"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".Otp"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
