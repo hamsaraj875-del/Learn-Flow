@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ProgressBar
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -26,11 +27,11 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        var btn : Button;
+        var btn : FrameLayout;
         var progressBar : ProgressBar;
 
-        progressBar = findViewById(R.id.progressBar);
-        btn = findViewById(R.id.btn);
+        progressBar = findViewById(R.id.loader);
+        btn = findViewById(R.id.navAI);
         val chatRepository = ChatRepository(RetrofitClient.api)
 
         btn.visibility = View.GONE;

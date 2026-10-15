@@ -49,37 +49,53 @@ class SignUp : AppCompatActivity() {
             startActivity(intent);
         }
 
-        btnSignUp.setOnClickListener{
-            var userName = editName.text.toString();
-            var email = editEmail.text.toString();
-            var password = editPassword.text.toString();
 
-            if(userName.isEmpty() || email.isEmpty() || password.isEmpty()){
-                Toast.makeText(this@SignUp,"Fields cannot be empty",Toast.LENGTH_SHORT).show();
-            }else{
-                try{
-                    signupLoader.visibility = View.VISIBLE;
-                    btnSignUp.text = "";
-                    btnSignUp.isEnabled = false;
-                    lifecycleScope.launch{
-                        var response = chatRepository.signUp(SignUpRequest(userName, email, password));
-                        if(response.success){
-                            var intent = Intent(this@SignUp,MainActivity::class.java);
-                            startActivity(intent);
-                        }else{
-                            Toast.makeText(this@SignUp,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
+        btnSignUp.setOnClickListener {
+            val name = editName.text.toString().trim()
+            val email = editEmail.text.toString().trim()
+            val password = editPassword.text.toString();
+
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(
+                    this@SignUp,
+                    "Fields cannot be empty",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                btnSignUp.text = ""
+                signupLoader.visibility = View.VISIBLE
+                btnSignUp.isEnabled = false
+                lifecycleScope.launch {
+                    try {
+                        val response = chatRepository.signUp(
+                            SignUpRequest(name, email, password)
+                        )
+                        if (response.success) {
+                            val intent = Intent(this@SignUp, Otp::class.java)
+                            intent.putExtra("email", email)
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(
+                                this@SignUp,
+                                "Signup failed. Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this@SignUp,
+                            "Error: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        signupLoader.visibility = View.GONE
+                        btnSignUp.text = "Create Account  →"
+                        btnSignUp.isEnabled = true
                     }
-                }catch(e:Exception){
-                    Toast.makeText(this@SignUp,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
-                }
-                finally{
-                    signupLoader.visibility = View.GONE;
-                    btnSignUp.text = "Create Account  →";
-                    btnSignUp.isEnabled = true;
                 }
             }
         }
+
 
     }
 }

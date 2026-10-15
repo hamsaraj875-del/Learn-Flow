@@ -4,8 +4,8 @@ import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.DocumentModel
 import com.example.learnflow.data.model.LoginRequest
-import com.example.learnflow.data.model.LoginResponse
 import com.example.learnflow.data.model.OtpRequest
+import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.remote.LearnFlowApi
 import io.example.learnflow.data.model.MessageResponse
@@ -16,19 +16,19 @@ class ChatRepository(
     private val api: LearnFlowApi
 ) {
 
-    suspend fun userIsLoggedIn(): LoginResponse {
+    suspend fun userIsLoggedIn(): Response {
         return api.userIsLoggedIn();
     }
 
-    suspend fun login(request: LoginRequest):LoginResponse{
+    suspend fun login(request: LoginRequest):Response{
         return api.login(request);
     }
 
-    suspend fun signUp(request: SignUpRequest):LoginResponse{
+    suspend fun signUp(request: SignUpRequest): Response {
         return api.signUp(request);
     }
 
-    suspend fun otp(request: OtpRequest):LoginResponse{
+    suspend fun otp(request: OtpRequest):Response{
         return api.otp(request);
     }
 

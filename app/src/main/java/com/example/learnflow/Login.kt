@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -32,7 +33,7 @@ class Login : AppCompatActivity() {
         var signUp : TextView;
         var userEmail : EditText;
         var userPassword : EditText;
-        var btnLogin : MaterialButton;
+        var btnLogin : AppCompatButton;
         var loginLoader : ProgressBar;
 
         signUp = findViewById(R.id.tvSignup);
@@ -53,7 +54,7 @@ class Login : AppCompatActivity() {
             var email = userEmail.text.toString();
             var password = userPassword.text.toString();
 
-            if(!email.isEmpty() || !password.isEmpty()){
+            if(email.isEmpty() || password.isEmpty()){
                 Toast.makeText(this@Login,"Fields cannot be empty",Toast.LENGTH_SHORT).show();
             }else{
                 try{
