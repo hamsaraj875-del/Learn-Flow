@@ -21,7 +21,7 @@ interface LearnFlowApi {
     @POST("user/login")
     suspend fun login(
         @Body request: LoginRequest
-    ):Response;
+    ): Response
 
     @POST("user/signUp")
     suspend fun signUp(
@@ -31,29 +31,25 @@ interface LearnFlowApi {
     @POST("user/otp")
     suspend fun otp(
         @Body request: OtpRequest
-    ):Response
+    ): Response
 
     @POST("chat")
     suspend fun sendMessage(
         @Body request: ChatRequest
     ): ChatResponse
 
-
     @POST("new_chat")
     suspend fun createNewChat(
-        @Body userId:String
-    ):ChatResponse
-
+        @Body userId: String
+    ): ChatResponse
 
     @POST("user/loggedIn")
-    suspend fun userIsLoggedIn(): Response;
-
+    suspend fun userIsLoggedIn(): Response
 
     @GET("api/conversations/{conversationId}/messages")
     suspend fun getMessages(
         @Path("conversationId") conversationId: String
     ): MessageResponse
-
 
     @Multipart
     @POST("document")
