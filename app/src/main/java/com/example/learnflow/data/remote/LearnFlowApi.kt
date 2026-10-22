@@ -3,9 +3,12 @@ package com.example.learnflow.data.remote
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.LoginRequest
+import com.example.learnflow.data.model.NewChatRequest
+import com.example.learnflow.data.model.NewChatResponse
 import com.example.learnflow.data.model.OtpRequest
 import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.SignUpRequest
+import com.example.learnflow.data.model.userData
 import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -21,7 +24,7 @@ interface LearnFlowApi {
     @POST("user/login")
     suspend fun login(
         @Body request: LoginRequest
-    ): Response
+    ): userData
 
     @POST("user/signUp")
     suspend fun signUp(
@@ -31,7 +34,7 @@ interface LearnFlowApi {
     @POST("user/otp")
     suspend fun otp(
         @Body request: OtpRequest
-    ): Response
+    ): userData
 
     @POST("chat")
     suspend fun sendMessage(
@@ -40,11 +43,11 @@ interface LearnFlowApi {
 
     @POST("new_chat")
     suspend fun createNewChat(
-        @Body userId: String
-    ): ChatResponse
+        @Body request: NewChatRequest
+    ): NewChatResponse
 
     @POST("user/loggedIn")
-    suspend fun userIsLoggedIn(): Response
+    suspend fun userIsLoggedIn(): userData
 
     @GET("api/conversations/{conversationId}/messages")
     suspend fun getMessages(

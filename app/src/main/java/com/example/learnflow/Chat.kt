@@ -21,13 +21,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.learnflow.data.model.ChatRequest
-import com.example.learnflow.data.model.DocumentModel
+import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.math.sin
 
@@ -36,7 +35,10 @@ class Chat : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var messageAdapter: MessageAdapter
 
+    private lateinit var conversationId:String
+
     private var typingAnimator: ValueAnimator? = null
+    val chatRepository = ChatRepository(RetrofitClient.api)
     private var pdfBytes : ByteArray?=null
     private var selectedPdfName : String?=null
 
@@ -67,7 +69,6 @@ class Chat : AppCompatActivity() {
         val attachmentContainer = findViewById<LinearLayout>(R.id.attachmentContainer)
         val typingIndicator = findViewById<View>(R.id.typingIndicator)
         val documentView = findViewById<View>(R.id.documentView)
-        val chatRepository = ChatRepository(RetrofitClient.api)
         val btnAttach = findViewById<ImageButton>(R.id.btnAttach)
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
         val btnSidebar = findViewById<ImageButton>(R.id.btnSidebar)
@@ -80,9 +81,13 @@ class Chat : AppCompatActivity() {
         recyclerView.adapter = messageAdapter
 
 
+        var userId = intent.getStringExtra("userId");
 
-        val documentPicker =
-            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        //calling new chat
+
+        newChat(userId);
+
+        val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
                     handleSelectedDocument(uri,txtAttachmentName,attachmentContainer,documentView)
                 }
@@ -182,7 +187,8 @@ class Chat : AppCompatActivity() {
                     try {
                         val response = chatRepository.sendMessage(
                             ChatRequest(
-                                conversationId = 1,
+                                userId =userId,
+                                conversationId = conversationId,
                                 question = mes
                             )
                         )
@@ -326,6 +332,21 @@ class Chat : AppCompatActivity() {
     private fun getPdfBytes(uri: Uri): ByteArray? {
         return contentResolver.openInputStream(uri)?.use { inputStream ->
             inputStream.readBytes()
+        }
+    }
+
+    //new chat creation
+
+    fun newChat(userId: String?){
+        lifecycleScope.launch{
+            var response = chatRepository.createNewChat(NewChatRequest(userId));
+
+            if(response.success){
+                conversationId = response.conversationId;
+            }else{
+                finish();
+                Toast.makeText(this@Chat,"Unable to create a new chat ",Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

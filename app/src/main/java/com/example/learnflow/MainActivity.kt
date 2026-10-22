@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        var userId:String?="";
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
@@ -43,6 +44,7 @@ class MainActivity : AppCompatActivity() {
                     var intent = Intent(this@MainActivity,Promo::class.java);
                     startActivity(intent);
                 }else{
+                    userId = response.userId;
                     progressBar.visibility = View.GONE;
                     btn.visibility = View.VISIBLE;
                 }
@@ -56,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         btn.setOnClickListener{
             var intent = Intent(this@MainActivity, Chat::class.java);
+            intent.putExtra("userId",userId);
             startActivity(intent);
         }
     }

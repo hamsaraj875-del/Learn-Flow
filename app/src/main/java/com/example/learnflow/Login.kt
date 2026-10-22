@@ -57,11 +57,11 @@ class Login : AppCompatActivity() {
             if(email.isEmpty() || password.isEmpty()){
                 Toast.makeText(this@Login,"Fields cannot be empty",Toast.LENGTH_SHORT).show();
             }else{
-                try{
-                    btnLogin.text = "";
-                    btnLogin.isEnabled = false;
-                    loginLoader.visibility = View.VISIBLE;
-                    lifecycleScope.launch{
+                btnLogin.text = "";
+                btnLogin.isEnabled = false;
+                loginLoader.visibility = View.VISIBLE;
+                lifecycleScope.launch{
+                    try{
                         var response = chatRepository.login(LoginRequest(email, password));
                         if(response.success){
                             var intent = Intent(this@Login,MainActivity::class.java);
@@ -69,14 +69,15 @@ class Login : AppCompatActivity() {
                         }else{
                             Toast.makeText(this@Login,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
                         }
+                    }catch(e:Exception){
+                        Toast.makeText(this@Login,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
+                    }finally{
+                        btnLogin.text = "Sign In  →"
+                        btnLogin.isEnabled = true;
+                        loginLoader.visibility = View.GONE;
                     }
-                }catch(e:Exception){
-                    Toast.makeText(this@Login,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
-                }finally{
-                    btnLogin.text = "Sign In  →"
-                    btnLogin.isEnabled = true;
-                    loginLoader.visibility = View.GONE;
                 }
+
             }
         }
     }
