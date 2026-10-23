@@ -1,5 +1,4 @@
-
-package com.example.learnflow
+package com.example.learnflow.data.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +6,9 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.learnflow.MathMessageRenderer
+import com.example.learnflow.R
+import com.example.learnflow.data.model.MessageAdapterModel
 
 class MessageAdapter(
     private val messages: List<MessageAdapterModel>

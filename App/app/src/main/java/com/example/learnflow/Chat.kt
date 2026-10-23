@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -20,7 +21,11 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.learnflow.data.adapter.ChatAdapter
+import com.example.learnflow.data.adapter.MessageAdapter
+import com.example.learnflow.data.model.ChatHistory
 import com.example.learnflow.data.model.ChatRequest
+import com.example.learnflow.data.model.MessageAdapterModel
 import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
@@ -32,8 +37,12 @@ import kotlin.math.sin
 
 class Chat : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var messageRecyclerView: RecyclerView
+
+    private lateinit var chatRecyclerView:RecyclerView
     private lateinit var messageAdapter: MessageAdapter
+
+    private lateinit var chatAdapter : ChatAdapter
 
     private lateinit var conversationId:String
 
@@ -43,6 +52,7 @@ class Chat : AppCompatActivity() {
     private var selectedPdfName : String?=null
 
     private var selectedPdfUri: Uri? = null
+    private val chatList = mutableListOf<ChatHistory>()
 
     private val messages = mutableListOf<MessageAdapterModel>()
 
@@ -73,12 +83,24 @@ class Chat : AppCompatActivity() {
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
         val btnSidebar = findViewById<ImageButton>(R.id.btnSidebar)
         val btnCloseSidebar = findViewById<ImageButton>(R.id.btnCloseSidebar);
+        val chatListLoader = findViewById<ProgressBar>(R.id.chatListLoader)
 
 
-        recyclerView = findViewById(R.id.recyclerView)
+        messageRecyclerView = findViewById(R.id.messageRecyclerView)
         messageAdapter = MessageAdapter(messages)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = messageAdapter
+        messageRecyclerView.layoutManager = LinearLayoutManager(this)
+        messageRecyclerView.adapter = messageAdapter
+
+
+        chatRecyclerView = findViewById(R.id.chatsRecyclerView)
+        chatAdapter = ChatAdapter(chatList) { chat ->
+            if (chat.conversationId != "0") {
+                conversationId = chat.conversationId
+                loadMessages(chat.conversationId)
+            }
+        }
+        chatRecyclerView.layoutManager = LinearLayoutManager(this)
+        chatRecyclerView.adapter = chatAdapter
 
 
         var userId = intent.getStringExtra("userId");
@@ -113,6 +135,35 @@ class Chat : AppCompatActivity() {
             selectedPdfUri = null
             attachmentContainer.visibility = View.GONE
             documentView.visibility = View.GONE
+        }
+
+
+        lifecycleScope.launch{
+            var list:List<ChatHistory> = emptyList();
+            chatRecyclerView.visibility = View.GONE;
+            chatListLoader.visibility = View.VISIBLE;
+            try{
+                val response = chatRepository.chatList()
+
+                if(response.success){
+                    if(response.chatList.size==0){
+                        list = listOf(ChatHistory("No Chat yet","0","0"));
+                    }else{
+                        list = response.chatList;
+                    }
+                }else{
+                    list = listOf(ChatHistory("Error occurred, please try again!", "0", "0"))
+                }
+            }
+            catch(e:Exception){
+                list = listOf(ChatHistory("Error occurred, please try again!", "0", "0"))
+            }finally{
+                chatList.clear();
+                chatList.addAll(list);
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.visibility = View.VISIBLE;
+                chatListLoader.visibility = View.GONE;
+            }
         }
 
         btnSend.setOnClickListener {
@@ -225,8 +276,8 @@ class Chat : AppCompatActivity() {
     }
 
     private fun scrollToBottom() {
-        recyclerView.post {
-            recyclerView.smoothScrollToPosition(messages.lastIndex)
+        messageRecyclerView.post {
+            messageRecyclerView.smoothScrollToPosition(messages.lastIndex)
         }
     }
 

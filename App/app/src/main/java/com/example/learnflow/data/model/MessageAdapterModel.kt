@@ -1,4 +1,4 @@
-package com.example.learnflow
+package com.example.learnflow.data.model
 
 class MessageAdapterModel(
     val isUser: Boolean,

@@ -31,7 +31,7 @@ app.use(session({
     store: store,
     cookie: {
         httpOnly: true,
-        maxAge: 1000 * 60 * 60*5,
+        maxAge: 1000 * 60 * 60*24,
         rolling: true
     }
 }));
@@ -75,6 +75,7 @@ app.use("/user",loginRouter);
 app.post("/chat",controller.openAiResult);
 app.post("/document",controller.documentOpenAiResult);
 app.post("/new_chat",controller.createNewChat);
+app.post("/chatlist",controller.chatList);
 
 
 mongoose.connect(db).then(()=>{

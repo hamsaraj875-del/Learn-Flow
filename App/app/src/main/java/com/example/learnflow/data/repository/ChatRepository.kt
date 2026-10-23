@@ -1,5 +1,7 @@
 package com.example.learnflow.data.repository
 
+import com.example.learnflow.data.model.ChatHistory
+import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.LoginRequest
@@ -41,6 +43,10 @@ class ChatRepository(
 
     suspend fun createNewChat(request: NewChatRequest): NewChatResponse {
         return api.createNewChat(request);
+    }
+
+    suspend fun chatList(): ChatHistoryList {
+        return api.chatList();
     }
 
     suspend fun getMessages(conversationId: String): MessageResponse {

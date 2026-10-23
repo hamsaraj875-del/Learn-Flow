@@ -70,14 +70,29 @@ exports.openAiResult = async (req, res, next) => {
 
 exports.createNewChat=async(req,res,next)=>{
     const data = req.body;
-    console.log(data);
     try{
         const user = await database.findById(data.userId);
         console.log(user);
         if(user){
+            const lastChat = await conversation.findOne({userId:user._id}).sort({_id:-1});
+            if (lastChat) {
+                const chatDetails = await messages.findOne({conversationId: lastChat._id});
+                if (chatDetails) {
+                    const newChat = new conversation({ userId: user._id });
+                    const newIdCreation = await newChat.save();
+                    return res.status(200).json({
+                        success: true,
+                        conversationId: newIdCreation._id
+                    });
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    conversationId: lastChat._id
+                });
+            }
             const newChat = new conversation({userId:user._id});
             const newIdCreation = await newChat.save();
-            console.log(newIdCreation);
             return res.status(200).json({
                 success:true,
                 conversationId:newIdCreation._id
@@ -91,6 +106,30 @@ exports.createNewChat=async(req,res,next)=>{
         })
     }
 
+}
+
+
+exports.chatList = async(req,res,next)=>{
+    try{
+        const list = await conversation.find({userId:req.session.userId}).select("_id title userId");
+        const chatList = list.map(chat => ({
+            title: chat.title,
+            userId: chat.userId,
+            conversationId: chat._id.toString()
+        }));
+        console.log(chatList);
+        console.log("hit guys")
+        return res.status(200).json({
+            success:true,
+            chatList:chatList,
+        })
+    }catch(err){
+        console.log(err);
+        return res.status(200).json({
+            success:false,
+            chatList:[]
+        })
+    }
 }
 
 

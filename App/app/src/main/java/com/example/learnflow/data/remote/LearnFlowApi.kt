@@ -1,5 +1,7 @@
 package com.example.learnflow.data.remote
 
+import com.example.learnflow.data.model.ChatHistory
+import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.LoginRequest
@@ -45,6 +47,9 @@ interface LearnFlowApi {
     suspend fun createNewChat(
         @Body request: NewChatRequest
     ): NewChatResponse
+
+    @POST("chatlist")
+    suspend fun chatList(): ChatHistoryList;
 
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData
