@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btn.setOnClickListener{
-            var intent = Intent(this@MainActivity, Chat::class.java);
+            var intent = Intent(this@MainActivity, ChatTopic::class.java);
             intent.putExtra("userId",userId);
             startActivity(intent);
         }

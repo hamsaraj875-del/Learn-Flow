@@ -16,8 +16,6 @@ const conversation = require("../models/conversation");
 
 exports.openAiResult = async (req, res, next) => {
     const question = req.body;
-    console.log(question);
-    console.log("hit guys");
     try {
         const userMessage = new messages({
             conversationId:question.conversationId,
@@ -42,7 +40,6 @@ exports.openAiResult = async (req, res, next) => {
             content: String(message.content)
         }));
         console.log("===conversation===");
-        console.log(conversation);
         const response = await generateResponse(conversation);
 
         const assistantMessage = new messages({
@@ -70,28 +67,31 @@ exports.openAiResult = async (req, res, next) => {
 
 exports.createNewChat=async(req,res,next)=>{
     const data = req.body;
+    console.log(data);
     try{
         const user = await database.findById(data.userId);
-        console.log(user);
         if(user){
             const lastChat = await conversation.findOne({userId:user._id}).sort({_id:-1});
             if (lastChat) {
                 const chatDetails = await messages.findOne({conversationId: lastChat._id});
                 if (chatDetails) {
-                    const newChat = new conversation({ userId: user._id });
+                    const newChat = new conversation({chatName:data.chatName, userId: user._id ,topic:data.topic});
                     const newIdCreation = await newChat.save();
+                    console.log(newIdCreation);
                     return res.status(200).json({
                         success: true,
                         conversationId: newIdCreation._id
                     });
                 }
 
+                await conversation.findOneAndUpdate(lastChat,{chatName:data.chatName,topic:data.topic});
+
                 return res.status(200).json({
                     success: true,
                     conversationId: lastChat._id
                 });
             }
-            const newChat = new conversation({userId:user._id});
+            const newChat = new conversation({chatName:data.chatName,userId:user._id,topic:data.topic});
             const newIdCreation = await newChat.save();
             return res.status(200).json({
                 success:true,
@@ -110,15 +110,14 @@ exports.createNewChat=async(req,res,next)=>{
 
 
 exports.chatList = async(req,res,next)=>{
+    console.log("=== chat list ====");
     try{
-        const list = await conversation.find({userId:req.session.userId}).select("_id title userId");
+        const list = await conversation.find({userId:req.session.userId}).select("_id chatName userId");
         const chatList = list.map(chat => ({
-            title: chat.title,
+            chatName: chat.chatName,
             userId: chat.userId,
             conversationId: chat._id.toString()
         }));
-        console.log(chatList);
-        console.log("hit guys")
         return res.status(200).json({
             success:true,
             chatList:chatList,
@@ -128,6 +127,44 @@ exports.chatList = async(req,res,next)=>{
         return res.status(200).json({
             success:false,
             chatList:[]
+        })
+    }
+}
+
+
+
+//message history
+
+exports.messageHistory = async(req,res,next)=>{
+    console.log("=== Message List ===");
+    const data = req.body;
+    try{
+        const chat = await conversation.findOne({userId:data.userId,_id:data.conversationId});
+        if(chat){
+            const mesList = await messages.find({conversationId:chat._id,userId:chat.userId}).select("role content");
+            messageList = mesList.map(mes=>{
+                return {
+                    isUser:mes.role=='user'?true:false,
+                    message:mes.content,
+                }
+            })
+            console.log(mesList);
+            return res.status(200).json({
+                success:true,
+                messageList:messageList,
+            })
+        }else{
+            return res.status(500).json({
+                success:false,
+                messageList:[],
+            })
+        }
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            messageList:[],
         })
     }
 }

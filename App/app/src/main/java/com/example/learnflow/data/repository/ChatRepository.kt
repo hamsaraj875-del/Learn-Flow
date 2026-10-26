@@ -1,10 +1,11 @@
 package com.example.learnflow.data.repository
 
-import com.example.learnflow.data.model.ChatHistory
 import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.LoginRequest
+import com.example.learnflow.data.model.MessageHistoryRequest
+import com.example.learnflow.data.model.MessageList
 import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.model.NewChatResponse
 import com.example.learnflow.data.model.OtpRequest
@@ -12,7 +13,6 @@ import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.model.userData
 import com.example.learnflow.data.remote.LearnFlowApi
-import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 
@@ -49,8 +49,8 @@ class ChatRepository(
         return api.chatList();
     }
 
-    suspend fun getMessages(conversationId: String): MessageResponse {
-        return api.getMessages(conversationId)
+    suspend fun getMessages(request: MessageHistoryRequest): MessageList {
+        return api.getMessages(request)
     }
 
     suspend fun uploadDocument(pdf: MultipartBody.Part,question: RequestBody): ChatResponse {

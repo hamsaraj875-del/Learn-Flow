@@ -1,13 +1,17 @@
 const mongoose = require("mongoose");
 
 const conversationSchema = mongoose.Schema({
-    title: {
+    chatName: {
       type: String,
-      default: "New Chat"
+      required:true,
     },
     userId:{
       type:String,
-      required:true
+      required:true,
+    },
+    topic:{
+      type:String,
+      required:true,
     }
   },
   { timestamps: true }

@@ -21,7 +21,6 @@ exports.loggedIn=(req,res,next)=>{
       name:req.session.userName,
     })
   }else{
-    console.log("user is not logged in");
     return res.status(500).json({
       success:false,
       userId:"",
@@ -69,13 +68,11 @@ exports.signUp = [
     };
 
     if (!errors.isEmpty()) {
-      console.log("some error in signup")
       errors.array().forEach((err) => {
         if (!formattedError[err.path]) {
           formattedError[err.path] = err.msg;
         }
       });
-      console.log(formattedError);
       return res.status(400).json({
         success: false,
         message: formattedError,
@@ -83,7 +80,6 @@ exports.signUp = [
       });
     }
     if (errors.isEmpty()) {
-      console.log("no errors just signup process")
       try {
         const { name, email, password } = req.body;
         const user = await database.findOne({ email: email });
@@ -156,7 +152,7 @@ exports.otp = async (req, res, next) => {
   }
   const { name:user, email, password: passCode } = req.session.userDetails;
   try {
-    console.log("otp successfull");
+    console.log("=== Otp sent ===");
     const password = await bcrypt.hash(passCode, 10);
     const details = new database({user,email,password});
     const userId = await details.save();
@@ -210,8 +206,6 @@ const generateEmail = async ({ otp,email }) => {
         privateKey: process.env.EMAIL_PRIVATE_KEY,
       }
     );
-
-    console.log("Confirmation email sent through EmailJS.");
     return response;
   } catch (err) {
     console.error("EmailJS error:", err);
@@ -223,11 +217,11 @@ const generateEmail = async ({ otp,email }) => {
 //user login for account
 
 exports.login = async (req, res, next) => {
+  console.log("====LOGIN====");
   const { email, password } = req.body;
 
   try {
     const user = await database.findOne({ email: email });
-    console.log(user);
     if (user && (await bcrypt.compare(password, user.password))) {
       req.session.isLoggedIn = true;
       req.session.userName = user.name;
@@ -245,7 +239,6 @@ exports.login = async (req, res, next) => {
           });
         }
 
-        console.log("login successfull");
 
         return res.status(200).json({
           success: true,
@@ -261,6 +254,7 @@ exports.login = async (req, res, next) => {
       });
     }
   } catch (err) {
+    console.log(err);
     return res.status(201).json({
       success: false,
       userId:"",

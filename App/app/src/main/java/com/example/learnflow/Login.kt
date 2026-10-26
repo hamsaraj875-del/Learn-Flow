@@ -67,7 +67,7 @@ class Login : AppCompatActivity() {
                             var intent = Intent(this@Login,MainActivity::class.java);
                             startActivity(intent);
                         }else{
-                            Toast.makeText(this@Login,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this@Login,"Invalid Credentials",Toast.LENGTH_SHORT).show();
                         }
                     }catch(e:Exception){
                         Toast.makeText(this@Login,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();

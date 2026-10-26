@@ -33,9 +33,7 @@ class ChatAdapter(
         position: Int
     ) {
         val chat = chatList[position]
-
-        holder.txtMessage.text = chat.title
-
+        holder.txtMessage.text = chat.chatName;
         holder.itemView.setOnClickListener {
             onChatClick(chat)
         }

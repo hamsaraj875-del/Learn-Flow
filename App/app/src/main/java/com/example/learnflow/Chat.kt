@@ -25,8 +25,8 @@ import com.example.learnflow.data.adapter.ChatAdapter
 import com.example.learnflow.data.adapter.MessageAdapter
 import com.example.learnflow.data.model.ChatHistory
 import com.example.learnflow.data.model.ChatRequest
-import com.example.learnflow.data.model.MessageAdapterModel
-import com.example.learnflow.data.model.NewChatRequest
+import com.example.learnflow.data.model.Message
+import com.example.learnflow.data.model.MessageHistoryRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
 import kotlinx.coroutines.launch
@@ -54,7 +54,7 @@ class Chat : AppCompatActivity() {
     private var selectedPdfUri: Uri? = null
     private val chatList = mutableListOf<ChatHistory>()
 
-    private val messages = mutableListOf<MessageAdapterModel>()
+    private val messages = mutableListOf<Message>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +71,9 @@ class Chat : AppCompatActivity() {
             )
             insets
         }
+
+        var userId = intent.getStringExtra("userId");
+        conversationId = intent.getStringExtra("conversationId")?:"" ;
 
         val btnSend = findViewById<ImageView>(R.id.btnSend)
         val editMessage = findViewById<EditText>(R.id.editMessage)
@@ -96,18 +99,26 @@ class Chat : AppCompatActivity() {
         chatAdapter = ChatAdapter(chatList) { chat ->
             if (chat.conversationId != "0") {
                 conversationId = chat.conversationId
-                loadMessages(chat.conversationId)
+
+                lifecycleScope.launch{
+                    var response = chatRepository.getMessages(
+                        MessageHistoryRequest(
+                            userId,
+                            conversationId
+                        )
+                    )
+                    if(response.success){
+                        messages.clear();
+                        messages.addAll(response.messageList);
+                        messageAdapter.notifyItemInserted(messages.lastIndex);
+                    }
+                }
             }
         }
         chatRecyclerView.layoutManager = LinearLayoutManager(this)
         chatRecyclerView.adapter = chatAdapter
 
-
-        var userId = intent.getStringExtra("userId");
-
         //calling new chat
-
-        newChat(userId);
 
         val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
@@ -147,16 +158,16 @@ class Chat : AppCompatActivity() {
 
                 if(response.success){
                     if(response.chatList.size==0){
-                        list = listOf(ChatHistory("No Chat yet","0","0"));
+                        list = listOf(ChatHistory("No Chat yet", "0", "0",));
                     }else{
                         list = response.chatList;
                     }
                 }else{
-                    list = listOf(ChatHistory("Error occurred, please try again!", "0", "0"))
+                    list = listOf(ChatHistory("Error occurred, please try again!", "0", "0",))
                 }
             }
             catch(e:Exception){
-                list = listOf(ChatHistory("Error occurred, please try again!", "0", "0"))
+                list = listOf(ChatHistory("Error occurred, please try again!", "0", "0",))
             }finally{
                 chatList.clear();
                 chatList.addAll(list);
@@ -174,7 +185,7 @@ class Chat : AppCompatActivity() {
             editMessage.setText("")
 
             if (pdfBytes != null) {
-                messages.add(MessageAdapterModel(true, mes, selectedPdfName))
+                messages.add(Message(true, mes, selectedPdfName))
                 messageAdapter.notifyItemInserted(messages.lastIndex)
                 attachmentContainer.visibility = View.GONE
                 documentView.visibility = View.GONE
@@ -199,7 +210,7 @@ class Chat : AppCompatActivity() {
                             pdfPart,
                             questionBody
                         )
-                        messages.add(MessageAdapterModel(false, response.response))
+                        messages.add(Message(false, response.response))
                         messageAdapter.notifyItemInserted(messages.lastIndex)
                         scrollToBottom()
                         pdfBytes = null
@@ -214,7 +225,7 @@ class Chat : AppCompatActivity() {
                         documentView.visibility = View.VISIBLE
                         messageAdapter.notifyItemRemoved(messages.lastIndex)
                         messages.add(
-                            MessageAdapterModel(
+                            Message(
                                 false,
                                 "Error occurred while connecting to the server."
                             )
@@ -228,7 +239,7 @@ class Chat : AppCompatActivity() {
                     }
                 }
             }else{
-                messages.add(MessageAdapterModel(true, mes))
+                messages.add(Message(true, mes))
                 messageAdapter.notifyItemInserted(messages.lastIndex)
                 scrollToBottom()
                 lifecycleScope.launch {
@@ -244,7 +255,7 @@ class Chat : AppCompatActivity() {
                             )
                         )
                         messages.add(
-                            MessageAdapterModel(
+                            Message(
                                 false,
                                 response.response
                             )
@@ -256,7 +267,7 @@ class Chat : AppCompatActivity() {
                         messages.removeAt(messages.lastIndex)
                         messageAdapter.notifyItemRemoved(messages.lastIndex)
                         messages.add(
-                            MessageAdapterModel(
+                            Message(
                                 false,
                                 "Error occurred while connecting to the server."
                             )
@@ -388,16 +399,4 @@ class Chat : AppCompatActivity() {
 
     //new chat creation
 
-    fun newChat(userId: String?){
-        lifecycleScope.launch{
-            var response = chatRepository.createNewChat(NewChatRequest(userId));
-
-            if(response.success){
-                conversationId = response.conversationId;
-            }else{
-                finish();
-                Toast.makeText(this@Chat,"Unable to create a new chat ",Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
 }

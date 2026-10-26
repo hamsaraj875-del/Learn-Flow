@@ -8,10 +8,10 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.learnflow.MathMessageRenderer
 import com.example.learnflow.R
-import com.example.learnflow.data.model.MessageAdapterModel
+import com.example.learnflow.data.model.Message
 
 class MessageAdapter(
-    private val messages: List<MessageAdapterModel>
+    private val messages: List<Message>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -88,7 +88,7 @@ class MessageAdapter(
         private val txtDocumentName: TextView =
             itemView.findViewById(R.id.txtDocumentName)
 
-        fun bind(item: MessageAdapterModel) {
+        fun bind(item: Message) {
             message.text = item.message
 
             val hasDocument = item.documentName != null

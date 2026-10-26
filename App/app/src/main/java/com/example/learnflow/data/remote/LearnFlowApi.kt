@@ -1,17 +1,17 @@
 package com.example.learnflow.data.remote
 
-import com.example.learnflow.data.model.ChatHistory
 import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
 import com.example.learnflow.data.model.LoginRequest
+import com.example.learnflow.data.model.MessageHistoryRequest
+import com.example.learnflow.data.model.MessageList
 import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.model.NewChatResponse
 import com.example.learnflow.data.model.OtpRequest
 import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.model.userData
-import io.example.learnflow.data.model.MessageResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
@@ -19,7 +19,6 @@ import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
-import retrofit2.http.Path
 
 interface LearnFlowApi {
 
@@ -54,10 +53,10 @@ interface LearnFlowApi {
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData
 
-    @GET("api/conversations/{conversationId}/messages")
+    @POST("conversation/messages")
     suspend fun getMessages(
-        @Path("conversationId") conversationId: String
-    ): MessageResponse
+        @Body request: MessageHistoryRequest
+    ): MessageList
 
     @Multipart
     @POST("document")
