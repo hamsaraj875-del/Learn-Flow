@@ -132,6 +132,33 @@ exports.chatList = async(req,res,next)=>{
 }
 
 
+//last conversation of the user
+
+exports.lastMessageHistory = async(req,res,next)=>{
+    console.log("====Last Message===");
+    const data = req.body;
+    try{
+        const chat = await conversation.findOne({userId:data.userId}).sort({_id:-1});
+        if(chat){
+            return res.status(200).json({
+                success:true,
+                conversationId:chat.conversationId,
+            })
+        }
+        return res.status(500).json({
+            success:false,
+            conversationId:"",
+        })
+    }catch(err){
+        console.log(err);
+        return res.status(200).json({
+            success:false,
+            conversationId:"",
+        })
+    }
+}
+
+
 
 //message history
 
@@ -141,14 +168,13 @@ exports.messageHistory = async(req,res,next)=>{
     try{
         const chat = await conversation.findOne({userId:data.userId,_id:data.conversationId});
         if(chat){
-            const mesList = await messages.find({conversationId:chat._id,userId:chat.userId}).select("role content");
+            const mesList = await messages.find({conversationId:chat._id,userId:chat.userId}).select("role content").sort({_id:-1});
             messageList = mesList.map(mes=>{
                 return {
                     isUser:mes.role=='user'?true:false,
                     message:mes.content,
                 }
             })
-            console.log(mesList);
             return res.status(200).json({
                 success:true,
                 messageList:messageList,
@@ -232,6 +258,7 @@ async function test() {
         const result = await parser.getText();
         console.log(result.text);
     } catch (err) {
+        console.log(err);
         console.error("Parsing error:", err);
     } finally {
         await parser.destroy();

@@ -15,7 +15,6 @@ import com.example.learnflow.data.model.userData
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
-import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -49,6 +48,11 @@ interface LearnFlowApi {
 
     @POST("chatlist")
     suspend fun chatList(): ChatHistoryList;
+
+    @POST("last/conversation/messages")
+    suspend fun getLastConversation(
+        @Body userId: String?
+    ):NewChatResponse
 
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData

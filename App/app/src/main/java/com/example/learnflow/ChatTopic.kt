@@ -1,6 +1,5 @@
 package com.example.learnflow
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -40,8 +39,10 @@ class ChatTopic : AppCompatActivity() {
         var startChat = findViewById<MaterialButton>(R.id.btnStartChat);
         var editChatName = findViewById<EditText>(R.id.editChatName);
         var loader = findViewById<ProgressBar>(R.id.startChatLoader);
+        var btnChatHistory = findViewById<MaterialButton>(R.id.btnChatHistory);
 
         val chatRepository = ChatRepository(RetrofitClient.api);
+        btnChatHistory.visibility = View.GONE;
 
         var userId = intent.getStringExtra("userId");
         val cards = listOf(cardProgramming,cardScience,cardAnything);
@@ -61,7 +62,28 @@ class ChatTopic : AppCompatActivity() {
         }
 
         cards.forEach { card -> card.setOnClickListener { select(card) } }
-        select(findViewById(R.id.cardAnything))   // default choice when the screen opens
+        select(findViewById(R.id.cardAnything))
+
+
+        lifecycleScope.launch{
+            try{
+                var response = chatRepository.getLastConversation(userId);
+                if(response.success){
+                    conversationId = response.conversationId;
+                    btnChatHistory.visibility = View.VISIBLE;
+                }
+            }
+            catch(e:Exception){
+                print(e);
+            }
+        }
+
+        btnChatHistory.setOnClickListener{
+            intent = Intent(this@ChatTopic,Chat::class.java);
+            intent.putExtra("userId",userId);
+            intent.putExtra("conversationId",conversationId);
+            startActivity(intent);
+        }
 
         startChat.setOnClickListener{
             var chatName = editChatName.text.toString();

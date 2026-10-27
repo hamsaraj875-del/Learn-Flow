@@ -107,10 +107,11 @@ class Chat : AppCompatActivity() {
                             conversationId
                         )
                     )
-                    if(response.success){
-                        messages.clear();
-                        messages.addAll(response.messageList);
-                        messageAdapter.notifyItemInserted(messages.lastIndex);
+                    if (response.success) {
+                        messages.clear()
+                        messages.addAll(response.messageList)
+                        messageAdapter.notifyDataSetChanged()
+                        scrollToBottom()
                     }
                 }
             }

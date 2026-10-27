@@ -41,8 +41,12 @@ class ChatRepository(
         return api.sendMessage(request)
     }
 
-    suspend fun createNewChat(request: NewChatRequest): NewChatResponse {
-        return api.createNewChat(request);
+    suspend fun getLastConversation(userId: String?):NewChatResponse{
+        return api.getLastConversation(userId);
+    }
+
+    suspend fun createNewChat(userId: NewChatRequest): NewChatResponse {
+        return api.createNewChat(userId);
     }
 
     suspend fun chatList(): ChatHistoryList {

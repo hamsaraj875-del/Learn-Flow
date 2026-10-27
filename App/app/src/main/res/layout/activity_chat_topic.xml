@@ -28,7 +28,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Brand row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -59,6 +58,32 @@
                     android:text="LearnFlow"
                     android:textColor="@color/white"
                     android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChatHistory"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="80dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:contentDescription="Open previous chat history"
+                    android:text="History"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_history"
+                    app:iconGravity="textStart"
+                    app:iconPadding="6dp"
+                    app:iconTint="@color/orange"
+                    app:iconSize="18dp"
+                    app:strokeColor="#2A2A2A"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="#141414" />
             </LinearLayout>
 
             <!-- Header -->
