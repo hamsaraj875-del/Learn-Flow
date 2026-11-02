@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.learnflow.data.model.HistoryCheckup
 import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
@@ -67,7 +68,7 @@ class ChatTopic : AppCompatActivity() {
 
         lifecycleScope.launch{
             try{
-                var response = chatRepository.getLastConversation(userId);
+                var response = chatRepository.getLastConversation(HistoryCheckup(userId));
                 if(response.success){
                     conversationId = response.conversationId;
                     btnChatHistory.visibility = View.VISIBLE;

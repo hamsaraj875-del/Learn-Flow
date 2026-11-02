@@ -3,6 +3,7 @@ package com.example.learnflow.data.repository
 import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
+import com.example.learnflow.data.model.HistoryCheckup
 import com.example.learnflow.data.model.LoginRequest
 import com.example.learnflow.data.model.MessageHistoryRequest
 import com.example.learnflow.data.model.MessageList
@@ -41,7 +42,7 @@ class ChatRepository(
         return api.sendMessage(request)
     }
 
-    suspend fun getLastConversation(userId: String?):NewChatResponse{
+    suspend fun getLastConversation(userId: HistoryCheckup?):NewChatResponse{
         return api.getLastConversation(userId);
     }
 

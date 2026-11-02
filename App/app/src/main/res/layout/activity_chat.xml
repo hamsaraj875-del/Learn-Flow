@@ -46,7 +46,7 @@
                     android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:contentDescription="AI"
-                    android:src ="@drawable/icon"
+                    android:src="@drawable/icon"
                     android:backgroundTint="@color/white" />
 
             </FrameLayout>
@@ -100,17 +100,35 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/headerDivider">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/messageRecyclerView"
+            <!-- Message RecyclerView with loading ProgressBar -->
+            <FrameLayout
+                android:id="@+id/messageFrame"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:overScrollMode="never"
-                android:paddingStart="14dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="8dp" />
+                android:layout_weight="1">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/messageRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    android:paddingStart="14dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="8dp" />
+
+                <!-- Loader shown while switching conversations -->
+                <ProgressBar
+                    android:id="@+id/messageLoadingProgress"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/orange"
+                    android:visibility="gone" />
+
+            </FrameLayout>
 
             <include
                 android:id="@+id/typingIndicator"
@@ -392,7 +410,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="30dp"
-                android:text = "Recents.."
+                android:text="Recents.."
                 android:textColor="@color/dark_text_primary"/>
 
             <FrameLayout
@@ -418,11 +436,8 @@
 
             </FrameLayout>
 
-
-
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
 </androidx.drawerlayout.widget.DrawerLayout>
-

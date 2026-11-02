@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  LearnFlow home screen, dark theme. One file.
-  Uses your existing resources: @drawable/icon, ic_home, ic_document, ic_chat, ic_setting, ic_sparkles
-  and colors: black, white, dark_surface, dark_surface_variant, dark_text_secondary.
-  New icon needed: @drawable/ic_profile (Android Studio > New > Vector Asset > "person").
-  Needs Material Components (MaterialCardView) like your chat screen.
--->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
@@ -82,7 +75,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Flow"
-                        android:textColor="#7C6CFF"
+                        android:textColor="@color/orange"
                         android:textSize="24sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -187,14 +180,14 @@
                         android:layout_height="26dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_home"
-                        app:tint="#FFFFFF" />
+                        app:tint="@color/white" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Home"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/white"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -215,14 +208,14 @@
                         android:layout_height="26dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_document"
-                        app:tint="#6E6E78" />
+                        app:tint="@color/white" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Documents"
-                        android:textColor="#6E6E78"
+                        android:textColor="@color/white"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -232,7 +225,7 @@
                     android:layout_weight="1" />
 
                 <LinearLayout
-                    android:id="@+id/navChat"
+                    android:id="@+id/navFocus"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
@@ -246,15 +239,15 @@
                         android:layout_width="26dp"
                         android:layout_height="26dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_chat"
-                        app:tint="#6E6E78" />
+                        android:src="@drawable/ic_focus"
+                        app:tint="@color/white" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Chat"
-                        android:textColor="#6E6E78"
+                        android:text="Focus Mode"
+                        android:textColor="@color/white"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -273,26 +266,26 @@
                         android:layout_width="26dp"
                         android:layout_height="26dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_setting"
-                        app:tint="#6E6E78" />
+                        android:src="@drawable/ic_session"
+                        app:tint="@color/white" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Settings"
-                        android:textColor="#6E6E78"
+                        android:text="Seessions"
+                        android:textColor="@color/white"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="92dp"
-            android:layout_height="92dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:layout_gravity="top|center_horizontal"
             app:cardBackgroundColor="@color/black"
-            app:cardCornerRadius="46dp"
+            app:cardCornerRadius="100dp"
             app:cardElevation="12dp"
             app:strokeWidth="0dp" />
 

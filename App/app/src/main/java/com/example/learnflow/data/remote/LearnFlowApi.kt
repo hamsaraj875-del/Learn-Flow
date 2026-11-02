@@ -3,6 +3,7 @@ package com.example.learnflow.data.remote
 import com.example.learnflow.data.model.ChatHistoryList
 import com.example.learnflow.data.model.ChatRequest
 import com.example.learnflow.data.model.ChatResponse
+import com.example.learnflow.data.model.HistoryCheckup
 import com.example.learnflow.data.model.LoginRequest
 import com.example.learnflow.data.model.MessageHistoryRequest
 import com.example.learnflow.data.model.MessageList
@@ -51,7 +52,7 @@ interface LearnFlowApi {
 
     @POST("last/conversation/messages")
     suspend fun getLastConversation(
-        @Body userId: String?
+        @Body userId: HistoryCheckup?
     ):NewChatResponse
 
     @POST("user/loggedIn")

@@ -45,6 +45,7 @@ class Chat : AppCompatActivity() {
     private lateinit var chatAdapter : ChatAdapter
 
     private lateinit var conversationId:String
+    private lateinit var userId:String
 
     private var typingAnimator: ValueAnimator? = null
     val chatRepository = ChatRepository(RetrofitClient.api)
@@ -72,7 +73,7 @@ class Chat : AppCompatActivity() {
             insets
         }
 
-        var userId = intent.getStringExtra("userId");
+        userId = intent.getStringExtra("userId").toString();
         conversationId = intent.getStringExtra("conversationId")?:"" ;
 
         val btnSend = findViewById<ImageView>(R.id.btnSend)
@@ -87,7 +88,10 @@ class Chat : AppCompatActivity() {
         val btnSidebar = findViewById<ImageButton>(R.id.btnSidebar)
         val btnCloseSidebar = findViewById<ImageButton>(R.id.btnCloseSidebar);
         val chatListLoader = findViewById<ProgressBar>(R.id.chatListLoader)
+        val messageLoader = findViewById<ProgressBar>(R.id.messageLoadingProgress);
 
+
+        messageLoader.visibility = View.GONE;
 
         messageRecyclerView = findViewById(R.id.messageRecyclerView)
         messageAdapter = MessageAdapter(messages)
@@ -97,29 +101,16 @@ class Chat : AppCompatActivity() {
 
         chatRecyclerView = findViewById(R.id.chatsRecyclerView)
         chatAdapter = ChatAdapter(chatList) { chat ->
-            if (chat.conversationId != "0") {
+            if (chat.conversationId != "0" && chat.conversationId != conversationId) {
                 conversationId = chat.conversationId
-
-                lifecycleScope.launch{
-                    var response = chatRepository.getMessages(
-                        MessageHistoryRequest(
-                            userId,
-                            conversationId
-                        )
-                    )
-                    if (response.success) {
-                        messages.clear()
-                        messages.addAll(response.messageList)
-                        messageAdapter.notifyDataSetChanged()
-                        scrollToBottom()
-                    }
-                }
+                lastMessage(conversationId,messageLoader);
             }
         }
+
+        lastMessage(conversationId,messageLoader);
         chatRecyclerView.layoutManager = LinearLayoutManager(this)
         chatRecyclerView.adapter = chatAdapter
 
-        //calling new chat
 
         val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
@@ -144,7 +135,8 @@ class Chat : AppCompatActivity() {
         }
 
         btnRemoveAttachment.setOnClickListener {
-            selectedPdfUri = null
+            selectedPdfUri = null;
+            pdfBytes = null;
             attachmentContainer.visibility = View.GONE
             documentView.visibility = View.GONE
         }
@@ -289,7 +281,10 @@ class Chat : AppCompatActivity() {
 
     private fun scrollToBottom() {
         messageRecyclerView.post {
-            messageRecyclerView.smoothScrollToPosition(messages.lastIndex)
+            val lastPosition = messageAdapter.itemCount - 1
+            if (lastPosition >= 0) {
+                messageRecyclerView.scrollToPosition(lastPosition)
+            }
         }
     }
 
@@ -398,6 +393,27 @@ class Chat : AppCompatActivity() {
         }
     }
 
-    //new chat creation
+    //primary conversation
 
+
+    private fun lastMessage(conversationId: String, messageLoader: ProgressBar) {
+        messageRecyclerView.visibility = View.GONE
+        messageLoader.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            try {
+                val response = chatRepository.getMessages(MessageHistoryRequest(userId, conversationId))
+                if (response.success) {
+                    messages.clear()
+                    messages.addAll(response.messageList)
+                    messageAdapter.notifyDataSetChanged()
+                    scrollToBottom()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@Chat, "Failed to load messages", Toast.LENGTH_SHORT).show()
+            } finally {
+                messageLoader.visibility = View.GONE
+                messageRecyclerView.visibility = View.VISIBLE
+            }
+        }
+    }
 }
