@@ -18,6 +18,7 @@ import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
 
 class ChatTopic : AppCompatActivity() {
@@ -41,6 +42,9 @@ class ChatTopic : AppCompatActivity() {
         var editChatName = findViewById<EditText>(R.id.editChatName);
         var loader = findViewById<ProgressBar>(R.id.startChatLoader);
         var btnChatHistory = findViewById<MaterialButton>(R.id.btnChatHistory);
+        var chipExam = findViewById<Chip>(R.id.chipExam);
+        var chipHomework = findViewById<Chip>(R.id.chipHomework);
+        var chipExplain = findViewById<Chip>(R.id.chipSimple);
 
         val chatRepository = ChatRepository(RetrofitClient.api);
         btnChatHistory.visibility = View.GONE;
@@ -77,6 +81,17 @@ class ChatTopic : AppCompatActivity() {
             catch(e:Exception){
                 print(e);
             }
+        }
+
+
+        chipExam.setOnClickListener{
+            editChatName.setText("Exam");
+        }
+        chipHomework.setOnClickListener{
+            editChatName.setText("Homework");
+        }
+        chipExplain.setOnClickListener{
+            editChatName.setText("Explain");
         }
 
         btnChatHistory.setOnClickListener{

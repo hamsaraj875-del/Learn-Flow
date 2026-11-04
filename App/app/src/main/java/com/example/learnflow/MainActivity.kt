@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         var progressBar = findViewById<ProgressBar>(R.id.loader)
         var btn = findViewById<FrameLayout>(R.id.navAI)
         var focus = findViewById<LinearLayout>(R.id.navFocus)
+        var session = findViewById<LinearLayout>(R.id.navSession);
 
         val chatRepository = ChatRepository(RetrofitClient.api)
         btn.visibility = View.GONE
@@ -83,6 +84,11 @@ class MainActivity : AppCompatActivity() {
         focus.setOnClickListener {
             var intent = Intent(this@MainActivity, AppBlockerActivity::class.java)
             startActivity(intent)
+        }
+
+        session.setOnClickListener{
+            var intent = Intent(this@MainActivity,SessionTracker::class.java);
+            startActivity(intent);
         }
     }
 }

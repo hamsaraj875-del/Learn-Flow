@@ -118,6 +118,10 @@ class Chat : AppCompatActivity() {
                 }
             }
 
+
+
+        //click listeners
+
         btnSidebar.setOnClickListener {
             if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 drawerLayout.closeDrawer(GravityCompat.START)
