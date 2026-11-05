@@ -10,6 +10,7 @@ const fs = require("fs");
 const messages = require("../models/messages");
 const database = require("../models/database");
 const conversation = require("../models/conversation");
+const studySession = require("../models/studySession");
 
 
 //asynchronous support functions
@@ -191,6 +192,35 @@ exports.messageHistory = async(req,res,next)=>{
         return res.status(500).json({
             success:false,
             messageList:[],
+        })
+    }
+}
+
+
+exports.createSession = async(req,res,next)=>{
+    const data = req.body;
+
+
+    
+    try{
+        const user = await database.findById(req.session.userId);
+        if(!user){
+            return res.status(500).json({
+                success:false,
+                message:"User not found unauthorized access",
+            })
+        }
+        const details = new studySession({userId:req.session.userId,startTime:data.startTime,endTime:0,plannedDuration:data.plannedDuration,actualDuration:0});
+        await details.save();
+        return res.status(200).json({
+            success:true,
+            message:"Session created successfully",
+        })
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            message:"Session creation failed"
         })
     }
 }

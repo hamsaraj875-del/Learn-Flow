@@ -16,7 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.learnflow.data.model.LoginRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
-import com.google.android.material.button.MaterialButton
+import com.example.learnflow.data.repository.LoginRepository
 import kotlinx.coroutines.launch
 
 class Login : AppCompatActivity() {
@@ -41,7 +41,7 @@ class Login : AppCompatActivity() {
         userPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         loginLoader = findViewById(R.id.loginLoader);
-        var chatRepository = ChatRepository(RetrofitClient.api);
+        var LoginRepository = LoginRepository(RetrofitClient.api);
 
         signUp.setOnClickListener{
             var intent = Intent(this@Login, SignUp::class.java);
@@ -62,7 +62,7 @@ class Login : AppCompatActivity() {
                 loginLoader.visibility = View.VISIBLE;
                 lifecycleScope.launch{
                     try{
-                        var response = chatRepository.login(LoginRequest(email, password));
+                        var response = LoginRepository.login(LoginRequest(email, password));
                         if(response.success){
                             var intent = Intent(this@Login,MainActivity::class.java);
                             startActivity(intent);

@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.learnflow.data.model.OtpRequest
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
+import com.example.learnflow.data.repository.LoginRepository
 import kotlinx.coroutines.launch
 
 class Otp : AppCompatActivity() {
@@ -46,7 +47,7 @@ class Otp : AppCompatActivity() {
         etOtp6 = findViewById(R.id.etOtp6);
         btnVerify = findViewById(R.id.btnVerify);
         verifyLoader = findViewById(R.id.verifyLoader);
-        var chatRepository = ChatRepository(RetrofitClient.api);
+        var LoginRepository = LoginRepository(RetrofitClient.api);
 
         verifyLoader.visibility = View.GONE;
 
@@ -60,7 +61,7 @@ class Otp : AppCompatActivity() {
                 var otp = etOtp1.text.toString()+etOtp2.text.toString()+etOtp3.text.toString()+etOtp4.text.toString()+etOtp5.text.toString()+etOtp6.text.toString();
                 try{
                     lifecycleScope.launch{
-                        var response = chatRepository.otp(OtpRequest(otp));
+                        var response = LoginRepository.otp(OtpRequest(otp));
                         if(response.success){
                             var intent = Intent(this@Otp,MainActivity::class.java);
                             startActivity(intent);

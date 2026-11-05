@@ -21,23 +21,6 @@ class ChatRepository(
     private val api: LearnFlowApi
 ) {
 
-    suspend fun userIsLoggedIn(): userData {
-        return api.userIsLoggedIn();
-    }
-
-    suspend fun login(request: LoginRequest): userData {
-        return api.login(request);
-    }
-
-    suspend fun signUp(request: SignUpRequest): Response {
-        return api.signUp(request);
-    }
-
-    suspend fun otp(request: OtpRequest):userData{
-        return api.otp(request);
-    }
-
-
     suspend fun sendMessage(request: ChatRequest): ChatResponse {
         return api.sendMessage(request)
     }

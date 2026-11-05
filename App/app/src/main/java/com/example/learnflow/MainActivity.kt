@@ -62,6 +62,8 @@ class MainActivity : AppCompatActivity() {
                 if (!response.success) {
                     var intent = Intent(this@MainActivity, Promo::class.java)
                     startActivity(intent)
+                    finish();
+                    return@launch
                 } else {
                     userId = response.userId
                     progressBar.visibility = View.GONE
@@ -87,7 +89,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         session.setOnClickListener{
-            var intent = Intent(this@MainActivity,SessionTracker::class.java);
+            var intent = Intent(this@MainActivity,SessionCreate::class.java);
+            intent.putExtra("userId",userId);
             startActivity(intent);
         }
     }

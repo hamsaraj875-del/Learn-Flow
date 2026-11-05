@@ -11,6 +11,7 @@ import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.model.NewChatResponse
 import com.example.learnflow.data.model.OtpRequest
 import com.example.learnflow.data.model.Response
+import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.model.userData
 import okhttp3.MultipartBody
@@ -54,6 +55,12 @@ interface LearnFlowApi {
     suspend fun getLastConversation(
         @Body userId: HistoryCheckup?
     ):NewChatResponse
+
+
+    @POST("createSession")
+    suspend fun createSession(
+        @Body request: Session
+    ) : Response;
 
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData

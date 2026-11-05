@@ -15,7 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.remote.RetrofitClient
-import com.example.learnflow.data.repository.ChatRepository
+import com.example.learnflow.data.repository.LoginRepository
 import kotlinx.coroutines.launch
 
 class SignUp : AppCompatActivity() {
@@ -42,7 +42,7 @@ class SignUp : AppCompatActivity() {
         editPassword = findViewById(R.id.etPassword);
         btnSignUp = findViewById(R.id.btnSignup);
         signupLoader = findViewById(R.id.signupLoader);
-        var chatRepository = ChatRepository(RetrofitClient.api);
+        var LoginRepository = LoginRepository(RetrofitClient.api);
 
         login.setOnClickListener{
             var intent = Intent(this@SignUp, Login::class.java);
@@ -67,7 +67,7 @@ class SignUp : AppCompatActivity() {
                 btnSignUp.isEnabled = false
                 lifecycleScope.launch {
                     try {
-                        val response = chatRepository.signUp(
+                        val response = LoginRepository.signUp(
                             SignUpRequest(name, email, password)
                         )
                         if (response.success) {
