@@ -100,7 +100,7 @@ class SessionAdapter(
     // Update an existing session
     fun updateSession(session: Session) {
         val position = sessions.indexOfFirst {
-            it.id == session.id
+            it.userId == session.userId
         }
 
         if (position != -1) {
@@ -115,4 +115,11 @@ class SessionAdapter(
         sessions.clear()
         notifyItemRangeRemoved(0, size)
     }
+
+    fun setSessions(newSessions: List<Session>) {
+        sessions.clear()
+        sessions.addAll(newSessions)
+        notifyDataSetChanged()
+    }
+
 }

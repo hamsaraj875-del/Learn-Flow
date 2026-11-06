@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 const schema = mongoose.Schema({
-    userId:{type:Number,required:true},
+    userId:{type:String,required:true},
+    sessionName:{type:String,required:true},
     startTime:{type:Number,required:true},
     endTime:{type:Number,required:true},
     plannedDuration:{type:Number,required:true},

@@ -11,6 +11,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -19,9 +20,12 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.ChatRepository
+import com.example.learnflow.data.repository.LoginRepository
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var userId:String;
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -31,7 +35,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        var userId: String? = ""
         super.onCreate(savedInstanceState)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -53,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         var focus = findViewById<LinearLayout>(R.id.navFocus)
         var session = findViewById<LinearLayout>(R.id.navSession);
 
-        val chatRepository = ChatRepository(RetrofitClient.api)
+        val chatRepository = LoginRepository(RetrofitClient.api)
         btn.visibility = View.GONE
 
         lifecycleScope.launch {
@@ -89,6 +92,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         session.setOnClickListener{
+            if(userId.isEmpty()){
+                Toast.makeText(this@MainActivity,"please wait we are setting up",Toast.LENGTH_SHORT).show();
+                return@setOnClickListener;
+            }
             var intent = Intent(this@MainActivity,SessionCreate::class.java);
             intent.putExtra("userId",userId);
             startActivity(intent);

@@ -77,7 +77,9 @@ app.post("/document",controller.documentOpenAiResult);
 app.post("/new_chat",controller.createNewChat);
 app.post("/chatlist",controller.chatList);
 app.post("/conversation/messages",controller.messageHistory);
+app.post("/last/conversation/messages",controller.history);
 app.post("/createSession",controller.createSession);
+app.post("/sessionList",controller.sessionList);
 
 
 mongoose.connect(db).then(()=>{

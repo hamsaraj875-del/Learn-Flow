@@ -10,8 +10,10 @@ import com.example.learnflow.data.model.MessageList
 import com.example.learnflow.data.model.NewChatRequest
 import com.example.learnflow.data.model.NewChatResponse
 import com.example.learnflow.data.model.OtpRequest
+import com.example.learnflow.data.model.Request
 import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.Session
+import com.example.learnflow.data.model.SessionList
 import com.example.learnflow.data.model.SignUpRequest
 import com.example.learnflow.data.model.userData
 import okhttp3.MultipartBody
@@ -61,6 +63,11 @@ interface LearnFlowApi {
     suspend fun createSession(
         @Body request: Session
     ) : Response;
+
+    @POST("sessionList")
+    suspend fun sessionList(
+        @Body request: Request
+    ): SessionList;
 
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData

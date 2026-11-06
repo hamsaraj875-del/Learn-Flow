@@ -76,10 +76,13 @@ class ChatTopic : AppCompatActivity() {
                 if(response.success){
                     conversationId = response.conversationId;
                     btnChatHistory.visibility = View.VISIBLE;
+                    Toast.makeText(this@ChatTopic,"History recovered",Toast.LENGTH_SHORT).show();
                 }
             }
             catch(e:Exception){
                 print(e);
+                Toast.makeText(this@ChatTopic,"History recovery unsuccessfull",Toast.LENGTH_SHORT).show();
+                Toast.makeText(this@ChatTopic,e.message,Toast.LENGTH_SHORT).show();
             }
         }
 

@@ -68,7 +68,6 @@ exports.openAiResult = async (req, res, next) => {
 
 exports.createNewChat=async(req,res,next)=>{
     const data = req.body;
-    console.log(data);
     try{
         const user = await database.findById(data.userId);
         if(user){
@@ -113,7 +112,7 @@ exports.createNewChat=async(req,res,next)=>{
 exports.chatList = async(req,res,next)=>{
     console.log("=== chat list ====");
     try{
-        const list = await conversation.find({userId:req.session.userId}).select("_id chatName userId");
+        const list = await conversation.find({userId:req.session.userId}).select("_id chatName userId").sort({_id:-1});
         const chatList = list.map(chat => ({
             chatName: chat.chatName,
             userId: chat.userId,
@@ -139,7 +138,7 @@ exports.lastMessageHistory = async(req,res,next)=>{
     console.log("====Last Message===");
     const data = req.body;
     try{
-        const chat = await conversation.findOne({userId:data.userId}).sort({_id:-1});
+        const chat = await conversation.findOne({userId:data.userId});
         if(chat){
             return res.status(200).json({
                 success:true,
@@ -159,6 +158,40 @@ exports.lastMessageHistory = async(req,res,next)=>{
     }
 }
 
+exports.history = async(req,res,next)=>{
+    const data = req.body;
+
+    try{
+        const user = await database.findById(data.userId);
+
+        if(!user){
+            return res.status(500).json({
+                success:false,
+                conversationId:"",
+            })
+        }
+
+        const conversate = await conversation.findOne({userId:req.session.userId}).sort({_id:-1});
+
+        if(!conversate){
+            return res.status(500).json({
+                success:false,
+                conversationId:"",
+            })
+        }
+
+        return res.status(200).json({
+            success:true,
+            conversationId:conversate._id,
+        })
+    }catch(err){
+        console.log(err);
+        return res.status(200).json({
+            success:false,
+            conversationId:"",
+        })
+    }
+}
 
 
 //message history
@@ -169,7 +202,7 @@ exports.messageHistory = async(req,res,next)=>{
     try{
         const chat = await conversation.findOne({userId:data.userId,_id:data.conversationId});
         if(chat){
-            const mesList = await messages.find({conversationId:chat._id,userId:chat.userId}).select("role content").sort({_id:-1});
+            const mesList = await messages.find({conversationId:chat._id,userId:chat.userId}).select("role content")
             messageList = mesList.map(mes=>{
                 return {
                     isUser:mes.role=='user'?true:false,
@@ -198,29 +231,55 @@ exports.messageHistory = async(req,res,next)=>{
 
 
 exports.createSession = async(req,res,next)=>{
+    console.log("=== create session ===");
     const data = req.body;
-
-
-    
     try{
-        const user = await database.findById(req.session.userId);
-        if(!user){
+        const user = await database.findById(data.userId);
+        if(!user || data.userId != req.session.userId){
+            console.log(user);
             return res.status(500).json({
                 success:false,
-                message:"User not found unauthorized access",
+                mes:"User not found unauthorized access",
             })
         }
-        const details = new studySession({userId:req.session.userId,startTime:data.startTime,endTime:0,plannedDuration:data.plannedDuration,actualDuration:0});
+        const details = new studySession({userId:req.session.userId,sessionName:data.sessionName,startTime:data.startTime,endTime:0,plannedDuration:data.plannedDuration,actualDuration:0});
         await details.save();
         return res.status(200).json({
             success:true,
-            message:"Session created successfully",
+            mes:"Session created successfully",
         })
     }catch(err){
         console.log(err);
         return res.status(500).json({
             success:false,
-            message:"Session creation failed"
+            mes:"Session creation failed"
+        })
+    }
+}
+
+exports.sessionList = async(req,res,next)=>{
+    console.log("=== session list ===");
+    const data = req.body;
+    try{
+        const user = await database.findById(data.userId);
+        if(!user && data.userId!=req.session.userId){
+            return res.status(500).json({
+                success:false,
+                mes:"user not found unauthorized access",
+            })
+        }
+        const sessionList = await studySession.find({userId:req.session.userId});
+        console.log(sessionList);
+
+        return res.status(200).json({
+            success:true,
+            sessionList:sessionList,
+        })
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            sessionList:[],
         })
     }
 }

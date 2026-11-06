@@ -32,6 +32,7 @@ class SessionCreate : AppCompatActivity() {
         }
 
         var editDuration = findViewById<EditText>(R.id.editDuration);
+        var editSessionName = findViewById<EditText>(R.id.editSessionName);
         var sessionCreateBtn = findViewById<MaterialButton>(R.id.btnCreateSession);
         var createSessionLoader = findViewById<ProgressBar>(R.id.createSessionLoader);
         var chip25Min = findViewById<Chip>(R.id.chip25Min);
@@ -41,7 +42,7 @@ class SessionCreate : AppCompatActivity() {
 
         var sessionRepository = SessionRepository(RetrofitClient.api);
 
-        userId = intent.getStringExtra("userId").toString();
+        userId = intent.getStringExtra("userId")?:""
         createSessionLoader.visibility = View.GONE;
 
 
@@ -63,22 +64,27 @@ class SessionCreate : AppCompatActivity() {
 
         sessionCreateBtn.setOnClickListener{
             createSessionLoader.visibility = View.VISIBLE;
-            sessionCreateBtn.visibility = View.GONE;
+            sessionCreateBtn.text = "";
             var startTime = System.currentTimeMillis();
+            if(userId.isEmpty()){
+                Toast.makeText(this@SessionCreate,"We are setting up please wait",Toast.LENGTH_SHORT).show();
+                return@setOnClickListener;
+            }
             lifecycleScope.launch{
                 try{
-                    var response = sessionRepository.createSession(Session(userId,startTime,0,editDuration.text.toString().toLong(),0,"pending"));
+                    var response = sessionRepository.createSession(Session(userId,editSessionName.text.toString(),startTime,0,editDuration.text.toString().toLong(),0,"pending"));
                     if(response.success){
                         intent = Intent(this@SessionCreate,SessionTracker::class.java);
+                        intent.putExtra("userId",userId);
                         startActivity(intent);
                     }
                     Toast.makeText(this@SessionCreate,response.mes, Toast.LENGTH_SHORT).show();
                 }catch(err:Exception){
                     println(err);
-                    Toast.makeText(this@SessionCreate,"Internal server error occured please try again",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this@SessionCreate,err.message,Toast.LENGTH_SHORT).show();
                 }finally{
                     createSessionLoader.visibility = View.GONE;
-                    sessionCreateBtn.visibility = View.VISIBLE;
+                    sessionCreateBtn.text = "Create session →";
                 }
             }
         }
