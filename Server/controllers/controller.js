@@ -242,11 +242,11 @@ exports.createSession = async(req,res,next)=>{
                 mes:"User not found unauthorized access",
             })
         }
-        const details = new studySession({userId:req.session.userId,sessionName:data.sessionName,startTime:data.startTime,endTime:0,plannedDuration:data.plannedDuration,actualDuration:0});
-        await details.save();
+        const details = new studySession({userId:req.session.userId,sessionName:data.sessionName,startTime:data.startTime,endTime:0,plannedDuration:data.plannedDuration,actualDuration:0,status:"pending"});
+        const dataStored = await details.save();
         return res.status(200).json({
             success:true,
-            mes:"Session created successfully",
+            mes:dataStored._id,
         })
     }catch(err){
         console.log(err);
@@ -269,7 +269,6 @@ exports.sessionList = async(req,res,next)=>{
             })
         }
         const sessionList = await studySession.find({userId:req.session.userId});
-        console.log(sessionList);
 
         return res.status(200).json({
             success:true,
@@ -283,6 +282,37 @@ exports.sessionList = async(req,res,next)=>{
         })
     }
 }
+
+exports.sessionUpdate = async (req, res, next) => {
+    const data = req.body;
+    try {
+        const user = await database.findById(data.userId);
+        if (!user || data.userId != req.session.userId) {
+            return res.status(401).json({
+                success: false,
+                mes: "user not found, unauthorized access"
+            });
+        }
+
+        const value = await studySession.findOneAndUpdate({ _id: data.id, userId: data.userId },{startTime: data.startTime, endTime: data.endTime, actualDuration: data.actualDuration,status: data.status},{ new: true });
+        if (value) {
+            return res.status(200).json({
+                success: true,
+                mes: "Successfully updated data"
+            });
+        }
+        return res.status(404).json({
+            success: false,
+            mes: "session not found"
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            success: false,
+            mes: "Internal server error"
+        });
+    }
+};
 
 
 //user document handled responses

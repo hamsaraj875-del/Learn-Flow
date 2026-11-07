@@ -69,6 +69,11 @@ interface LearnFlowApi {
         @Body request: Request
     ): SessionList;
 
+    @POST("updateSession")
+    suspend fun updateSession(
+        @Body request:Session
+    ): Response;
+
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData
 

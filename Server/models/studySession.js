@@ -7,6 +7,7 @@ const schema = mongoose.Schema({
     endTime:{type:Number,required:true},
     plannedDuration:{type:Number,required:true},
     actualDuration:{type:Number,required:true},
+    status:{type:String,required:true},
 });
 
 module.exports = mongoose.model("studySessions",schema);

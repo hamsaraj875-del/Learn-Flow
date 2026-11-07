@@ -15,4 +15,8 @@ class SessionRepository(private val api: LearnFlowApi) {
     suspend fun sessionList(request: Request): SessionList {
         return api.sessionList(request);
     }
+
+    suspend fun updateSession(request:Session):Response{
+        return api.updateSession(request);
+    }
 }

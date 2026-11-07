@@ -55,7 +55,7 @@ class SessionAdapter(
 
         val session = sessions[position]
 
-        holder.sessionName.text = "Study Session"
+        holder.sessionName.text = session.sessionName
 
         val dateFormat = SimpleDateFormat(
             "dd MMM yyyy, hh:mm a",
@@ -63,7 +63,7 @@ class SessionAdapter(
         )
 
         holder.sessionDate.text =
-            dateFormat.format(Date(session.startTime))
+            dateFormat.format(Date(session.startTime.toLong()))
 
         val minutes = session.actualDuration / 60000
 

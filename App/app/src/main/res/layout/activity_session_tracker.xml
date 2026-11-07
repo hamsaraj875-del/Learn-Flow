@@ -126,13 +126,12 @@
                     android:layout_gravity="center"
                     android:indeterminate="false"
                     android:max="100"
-                    android:progress="100"
+                    android:progress="0"
                     app:indicatorSize="220dp"
                     app:trackThickness="12dp"
-                    app:indicatorColor="@color/orange"
+                    app:indicatorColor="#E53935"
                     app:trackColor="#333333"
                     app:trackCornerRadius="8dp"/>
-
                 <TextView
                     android:id="@+id/txtTimer"
                     android:layout_width="wrap_content"
