@@ -64,6 +64,61 @@ exports.openAiResult = async (req, res, next) => {
 };
 
 
+//User Analysis Details
+
+exports.userAnalysis = async(req,res,next)=>{
+    console.log("=== user analysis ===");
+    const data = req.body;
+
+    try{
+        const user = await database.findById(data.userId);
+        if(!user){
+            return res.status(500).json({
+                success:false,
+                analysis : {sessionCount:0,sessionCompletion:0,accuracy:0,consistency:0,streak:0}
+            })
+        }
+
+        const session = await studySession.find({userId:req.session.userId}).sort({_id:-1});
+        const sessionCount = session.length;
+        var sessionCompletion = 0;
+        for(i in session){
+            if(i.plannedDuration == i.actualDuration){
+                sessionCompletion++;
+            }
+        }
+        let streak = 0;
+        for (let i = 0; i < session.length - 1; i++) {
+            const current = new Date(session[i].startTime);
+            const previous = new Date(session[i + 1].startTime);
+            const diff = Math.floor((current - previous) / (1000 * 60 * 60 * 24));
+            if (diff > 1) {
+                break;
+            }else{
+                streak++;
+            }
+        }
+
+        const accuracy = 0;
+        const firstSession = await studySession.findOne({ userId:req.session.userId }).sort({ startTime: 1 });
+        const totalDays = firstSession? Math.floor((Date.now() - firstSession.startTime) / (1000 * 60 * 60 * 24)) + 1: 0;
+        const consistency = totalDays/totalDays;
+
+        return res.status(200).json({
+            success:true,
+            analysis : {sessionCount:sessionCount,sessionCompletion:sessionCompletion,accuracy:0,consistency:consistency,streak:streak}
+        })
+
+    }catch(err){
+        console.log(err);
+        return res.status(500).json({
+            success:false,
+            analysis : {sessionCount:0,sessionCompletion:0,accuracy:0,consistency:0,streak:0}
+        })
+    }
+}
+
+
 //creating new chats
 
 exports.createNewChat=async(req,res,next)=>{
@@ -269,6 +324,7 @@ exports.sessionList = async(req,res,next)=>{
             })
         }
         const sessionList = await studySession.find({userId:req.session.userId});
+        console.log(sessionList);
 
         return res.status(200).json({
             success:true,
@@ -284,6 +340,7 @@ exports.sessionList = async(req,res,next)=>{
 }
 
 exports.sessionUpdate = async (req, res, next) => {
+    console.log("=== session update ====");
     const data = req.body;
     try {
         const user = await database.findById(data.userId);

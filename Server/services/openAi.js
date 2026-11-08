@@ -1,5 +1,10 @@
 require("dotenv").config();
 const Groq = require("groq-sdk");
+const { GoogleGenAI } = require("@google/genai");
+
+const gemini = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+});
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
@@ -63,15 +68,37 @@ const generateResponse = async (prompt) => {
     try {
         const response = await groq.chat.completions.create({
             model: "openai/gpt-oss-120b",
-            messages: [{role:"system",content:systemInstruction},...prompt]
+            messages: [
+                { role: "system", content: systemInstruction },
+                ...prompt
+            ]
         });
-
         return response.choices[0].message.content;
-
     } catch (error) {
-        console.error("Groq API Error:", error);
-        throw new Error("Failed to generate AI response");
+        console.error("Groq API Error:", error.message);
+        try {
+            console.log("Switching to Gemini...");
+            const response = await gemini.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{
+                            text: systemInstruction + "\n\n" +
+                                prompt.map(msg =>
+                                    `${msg.role}: ${msg.content}`
+                                ).join("\n")
+                        }]
+                    }
+                ]
+            });
+            return response.text;
+        } catch (geminiError) {
+            console.error("Gemini API Error:", geminiError.message);
+            throw new Error("Both Groq and Gemini failed to generate a response");
+        }
     }
 };
+
 
 module.exports = generateResponse;

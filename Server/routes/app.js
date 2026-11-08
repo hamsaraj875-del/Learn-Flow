@@ -73,6 +73,7 @@ app.use("/user",loginRouter);
 //main routes handling
 
 app.post("/chat",controller.openAiResult);
+app.post("/userAnalysis",controller.userAnalysis);
 app.post("/document",controller.documentOpenAiResult);
 app.post("/new_chat",controller.createNewChat);
 app.post("/chatlist",controller.chatList);
