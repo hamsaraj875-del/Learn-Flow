@@ -1,333 +1,342 @@
 package com.example.learnflow
 
-import android.content.res.ColorStateList
+import android.animation.ArgbEvaluator
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
-import android.widget.ProgressBar
+import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.learnflow.adapter.SessionAdapter
-import com.example.learnflow.data.model.Request
 import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.SessionRepository
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SessionTracker : AppCompatActivity() {
 
-    private lateinit var userId: String
-    private lateinit var sessionName: String
-
-    private lateinit var sessionAdapter: SessionAdapter
-    private lateinit var sessionRepository: SessionRepository
-
-    private lateinit var id: String
-
+    // Timer card
     private lateinit var txtTimer: TextView
     private lateinit var circularProgress: CircularProgressIndicator
+    private lateinit var btnStart: Button
+    private lateinit var btnPause: Button
+    private lateinit var btnResume: Button
+    private lateinit var btnEnd: Button
 
-    private lateinit var btnStart: View
-    private lateinit var btnPause: View
-    private lateinit var btnResume: View
-    private lateinit var btnEnd: View
+    // Current session card
+    private lateinit var statusChip: MaterialCardView
+    private lateinit var txtSessionStatus: TextView
+    private lateinit var txtSessionName: TextView
+    private lateinit var sessionProgress: LinearProgressIndicator
+    private lateinit var txtSessionPercent: TextView
+    private lateinit var txtPlanned: TextView
+    private lateinit var txtFocused: TextView
+    private lateinit var txtStartedAt: TextView
+
+    private lateinit var userId: String
+    private lateinit var sessionName: String
+    private lateinit var sessionId: String
 
     private var plannedDuration = 0L
+    private var plannedMillis = 0L
+
+    private var startTime = 0L
+    private var endTime = 0L
 
     private val studyDuration = 25 * 60 * 1000L
     private val breakDuration = 5 * 60 * 1000L
 
-    private val startColor = Color.parseColor("#E53935") // red
-    private val endColor = Color.parseColor("#43A047")   // green
-
-    // How long the final (pure end color) frame stays visible before the next phase
-    private val phaseHoldMillis = 600L
-    private val tickInterval = 100L
-
-    private var totalTime = 0L
-    private var remainingTime = 0L
-
-    private var startTime = 0.0
     private var remainingStudyTime = 0L
     private var currentStudyBlock = 0L
+    private var remainingTime = 0L
 
-    private var isTimerRunning = false
     private var isBreakPhase = false
+    private var isTimerRunning = false
+    private var sessionStarted = false
     private var sessionSaved = false
+    private var isSaving = false
 
-    private var countDownTimer: CountDownTimer? = null
-    private var pendingTransition: Runnable? = null
+    private var timer: CountDownTimer? = null
+
+    private lateinit var sessionRepository: SessionRepository
+
+    // Colors
+    private val colorRed = Color.parseColor("#E53935")
+    private val colorAmber = Color.parseColor("#FFB300")
+    private val colorGreen = Color.parseColor("#43A047")
+    private val colorBlue = Color.parseColor("#29B6F6")
+    private val colorGrey = Color.parseColor("#555555")
+    private val argb = ArgbEvaluator()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_session_tracker)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(
-                systemBars.left,
-                systemBars.top,
-                systemBars.right,
-                systemBars.bottom
-            )
-            insets
-        }
-
-        userId = intent.getStringExtra("userId") ?: ""
-        sessionName = intent.getStringExtra("sessionName") ?: ""
-        plannedDuration = intent.getLongExtra("plannedDuration", 0L)
-        id = intent.getStringExtra("id").toString()
         txtTimer = findViewById(R.id.txtTimer)
         circularProgress = findViewById(R.id.circularProgress)
         btnStart = findViewById(R.id.btnStart)
         btnPause = findViewById(R.id.btnPause)
         btnResume = findViewById(R.id.btnResume)
         btnEnd = findViewById(R.id.btnEnd)
-        val sessionRecyclerView = findViewById<RecyclerView>(R.id.sessionRecyclerView)
+
+        statusChip = findViewById(R.id.statusChip)
+        txtSessionStatus = findViewById(R.id.txtSessionStatus)
+        txtSessionName = findViewById(R.id.txtSessionName)
+        sessionProgress = findViewById(R.id.sessionProgress)
+        txtSessionPercent = findViewById(R.id.txtSessionPercent)
+        txtPlanned = findViewById(R.id.txtPlanned)
+        txtFocused = findViewById(R.id.txtFocused)
+        txtStartedAt = findViewById(R.id.txtStartedAt)
+
+        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
+
         sessionRepository = SessionRepository(RetrofitClient.api)
-        sessionAdapter = SessionAdapter(mutableListOf()) { session ->
-            sessionAdapter.removeSession(session)
-        }
-        sessionRecyclerView.layoutManager = LinearLayoutManager(this)
-        sessionRecyclerView.adapter = sessionAdapter
 
-        remainingStudyTime = plannedDuration * 60 * 1000L
-        currentStudyBlock = minOf(studyDuration, remainingStudyTime)
-        totalTime = currentStudyBlock
-        remainingTime = currentStudyBlock
+        // Null-safe: getStringExtra(...).toString() would turn null into the text "null"
+        userId = intent.getStringExtra("userId") ?: ""
+        sessionName = intent.getStringExtra("sessionName") ?: ""
+        sessionId = intent.getStringExtra("sessionId") ?: ""
+        plannedDuration = intent.getLongExtra("plannedDuration", 0L)
+
+        if (userId.isBlank() || sessionName.isBlank() || plannedDuration <= 0L) {
+            Toast.makeText(this, "Invalid session details", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        plannedMillis = plannedDuration * 60 * 1000L
+        remainingStudyTime = plannedMillis
+
         circularProgress.max = 100
-        circularProgress.progress = 0
-        updateTimerDisplay()
-        updateProgressColor()
+        txtSessionName.text = sessionName
+        txtPlanned.text = "$plannedDuration min"
 
-        btnStart.setOnClickListener {
-            if (startTime == 0.0) {
-                startTime = System.currentTimeMillis().toDouble()
-            }
-            startTimer()
-        }
+        updateTimerDisplay(remainingStudyTime)
+        updateProgress()
+        updateButtons()
+
+        btnStart.setOnClickListener { startSession() }
         btnPause.setOnClickListener { pauseTimer() }
         btnResume.setOnClickListener { resumeTimer() }
         btnEnd.setOnClickListener { endTimer() }
-        loadSessions()
     }
 
-    private fun loadSessions() {
-        lifecycleScope.launch {
-            try {
-                val response = sessionRepository.sessionList(Request(userId))
-                if (response.success) {
-                    sessionAdapter.setSessions(response.sessionList)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@SessionTracker, "Failed to load sessions", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    private fun startSession() {
+        if (sessionStarted || sessionSaved || isSaving) return
 
-    private fun startTimer() {
-        if (isTimerRunning || remainingStudyTime <= 0L) {
-            return
-        }
-        if (isBreakPhase) {
-            runTimer()
-        } else {
-            startStudyPhase()
-        }
+        sessionStarted = true
+        startTime = System.currentTimeMillis()
+        txtStartedAt.text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(startTime))
+
+        startStudyPhase()
+        updateButtons()
     }
 
     private fun startStudyPhase() {
-        if (remainingStudyTime <= 0L) {
-            finishSession()
-            return
-        }
+        if (sessionSaved || isSaving) return
         isBreakPhase = false
         currentStudyBlock = minOf(studyDuration, remainingStudyTime)
-        totalTime = currentStudyBlock
         remainingTime = currentStudyBlock
-        btnStart.visibility = View.GONE
-        btnPause.visibility = View.VISIBLE
-        btnResume.visibility = View.GONE
-        btnEnd.visibility = View.VISIBLE
-        updateTimerDisplay()
-        updateProgressColor()
-        runTimer()
+        startCountdown(currentStudyBlock)
     }
 
     private fun startBreakPhase() {
+        if (sessionSaved || isSaving) return
         isBreakPhase = true
-        totalTime = breakDuration
         remainingTime = breakDuration
-        btnStart.visibility = View.GONE
-        btnPause.visibility = View.VISIBLE
-        btnResume.visibility = View.GONE
-        btnEnd.visibility = View.VISIBLE
-        updateTimerDisplay()
-        updateProgressColor()
-        runTimer()
+        startCountdown(breakDuration)
     }
 
-    private fun runTimer() {
-        if (isTimerRunning) return
+    private fun startCountdown(duration: Long) {
+        timer?.cancel()
         isTimerRunning = true
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(remainingTime, tickInterval) {
+        updateButtons()
+        timer = object : CountDownTimer(duration, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 remainingTime = millisUntilFinished
-                updateTimerDisplay()
-                updateProgressColor()
+                txtTimer.text = if (isBreakPhase) {
+                    "Break\n${formatTime(millisUntilFinished)}"
+                } else {
+                    "Study\n${formatTime(millisUntilFinished)}"
+                }
+                updateProgress()
             }
 
             override fun onFinish() {
-                isTimerRunning = false
                 remainingTime = 0L
-                updateTimerDisplay()
-                updateProgressColor()
-                val transition = Runnable {
-                    pendingTransition = null
-                    if (sessionSaved) return@Runnable // user already ended the session
-                    if (isBreakPhase) {
-                        startStudyPhase()
+                isTimerRunning = false
+                if (isBreakPhase) {
+                    startStudyPhase()
+                } else {
+                    remainingStudyTime =
+                        (remainingStudyTime - currentStudyBlock).coerceAtLeast(0L)
+                    if (remainingStudyTime <= 0L) {
+                        remainingStudyTime = 0L
+                        finishSession()
                     } else {
-                        remainingStudyTime -= currentStudyBlock
-                        if (remainingStudyTime > 0L) {
-                            startBreakPhase()
-                        } else {
-                            finishSession()
-                        }
+                        startBreakPhase()
                     }
                 }
-                pendingTransition = transition
-                txtTimer.postDelayed(transition, phaseHoldMillis)
             }
         }.start()
     }
 
     private fun pauseTimer() {
         if (!isTimerRunning) return
-        countDownTimer?.cancel()
+        timer?.cancel()
         isTimerRunning = false
-        btnPause.visibility = View.GONE
-        btnResume.visibility = View.VISIBLE
-        btnEnd.visibility = View.VISIBLE
+        updateButtons()
     }
 
     private fun resumeTimer() {
-        if (isTimerRunning || remainingTime <= 0L) return
-        btnPause.visibility = View.VISIBLE
-        btnResume.visibility = View.GONE
-        btnEnd.visibility = View.VISIBLE
-        runTimer()
-    }
-
-    private fun cancelPendingTransition() {
-        pendingTransition?.let { txtTimer.removeCallbacks(it) }
-        pendingTransition = null
+        if (isTimerRunning || sessionSaved || isSaving) return
+        if (remainingTime <= 0L) return
+        startCountdown(remainingTime)
     }
 
     private fun endTimer() {
-        cancelPendingTransition()
-        countDownTimer?.cancel()
+        if (!sessionStarted || sessionSaved || isSaving) return
+        timer?.cancel()
         isTimerRunning = false
-        saveSession()
-        btnStart.visibility = View.GONE
-        btnPause.visibility = View.GONE
-        btnResume.visibility = View.GONE
-        btnEnd.visibility = View.GONE
-        Toast.makeText(this, "Session ended", Toast.LENGTH_SHORT).show()
+        finishSession()
     }
 
     private fun finishSession() {
-        cancelPendingTransition()
-        countDownTimer?.cancel()
+        if (sessionSaved || isSaving) return
+        timer?.cancel()
         isTimerRunning = false
-        remainingStudyTime = 0L
-        remainingTime = 0L
-        updateTimerDisplay()
-        updateProgressColor()
-        saveSession()
-        btnStart.visibility = View.GONE
-        btnPause.visibility = View.GONE
-        btnResume.visibility = View.GONE
-        btnEnd.visibility = View.GONE
-        Toast.makeText(this, "Session completed", Toast.LENGTH_SHORT).show()
+        endTime = System.currentTimeMillis()
+        val completedNaturally = remainingStudyTime <= 0L
+        saveSession(status = if (completedNaturally) "completed" else "incomplete")
+        updateButtons()
     }
 
-    private fun saveSession() {
-        if(id.isEmpty()){
-            Toast.makeText(this@SessionTracker,"Please wait! setting up the page",Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (startTime == 0.0 || sessionSaved) return
-        sessionSaved = true
-        val plannedMillis = plannedDuration * 60 * 1000L
-        val completedStudyMillis = plannedMillis - remainingStudyTime
-        val currentBlockStudied = if (!isBreakPhase) {
+    /** Study time done so far, in milliseconds (breaks are not counted). */
+    private fun actualStudyMillis(): Long {
+        val completedStudyTime = plannedMillis - remainingStudyTime
+        val currentBlockProgress = if (!isBreakPhase && sessionStarted) {
             (currentStudyBlock - remainingTime).coerceAtLeast(0L)
         } else {
             0L
         }
-        val studiedMillis = (completedStudyMillis + currentBlockStudied).coerceIn(0L, plannedMillis)
-        val actualDuration = studiedMillis / 60000L
-        val endTime = System.currentTimeMillis()
-        val status = if (studiedMillis >= plannedMillis) {
-            "completed"
-        } else {
-            "incomplete"
+        return (completedStudyTime + currentBlockProgress).coerceIn(0L, plannedMillis)
+    }
+
+    private fun calculateActualDuration(): Long = actualStudyMillis() / 60000L
+
+    private fun saveSession(status: String) {
+        if (sessionSaved || isSaving) return
+        if (sessionId.isBlank()) {
+            Toast.makeText(this, "Setting up the session, please wait", Toast.LENGTH_SHORT).show()
+            return
         }
-        val session = Session(id, userId, sessionName, startTime, endTime, plannedDuration, actualDuration, status)
+        if (startTime == 0L) return
+        isSaving = true
+        updateButtons()
+        val actualDuration = calculateActualDuration()
+        val session = Session(
+            sessionId, userId, sessionName, startTime.toDouble(), endTime,
+            plannedDuration, actualDuration, status
+        )
+
         lifecycleScope.launch {
             try {
-                var response = sessionRepository.updateSession(session)
-                if(response.success){
-                    Toast.makeText(this@SessionTracker, "Session saved", Toast.LENGTH_SHORT).show()
-                    loadSessions()
+                val response = sessionRepository.updateSession(session)
+                if (response.success) {
+                    sessionSaved = true
+                    Toast.makeText(this@SessionTracker, "Session saved successfully", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@SessionTracker, "Failed to save session. Press End to retry.", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                sessionSaved = false
-                Toast.makeText(this@SessionTracker, "Failed to save session", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@SessionTracker, "Network error. Press End to retry.", Toast.LENGTH_LONG).show()
+            } finally {
+                isSaving = false
+                updateButtons()
             }
         }
     }
 
-    private fun updateTimerDisplay() {
-        val totalSeconds = (remainingTime + 999L) / 1000L
-        val minutes = totalSeconds / 60L
-        val seconds = totalSeconds % 60L
-        txtTimer.text = String.format("%02d:%02d", minutes, seconds)
-    }
-
-    private fun updateProgressColor() {
-        if (totalTime <= 0L) return
-        val fraction = ((totalTime - remainingTime).toFloat() / totalTime).coerceIn(0f, 1f)
-        circularProgress.progress = Math.round(fraction * 100)
-        val color = if (isBreakPhase) {
-            interpolateColor(endColor, startColor, fraction)
+    private fun progressColor(fraction: Float): Int {
+        val f = fraction.coerceIn(0f, 1f)
+        return if (f < 0.5f) {
+            argb.evaluate(f / 0.5f, colorRed, colorAmber) as Int
         } else {
-            interpolateColor(startColor, endColor, fraction)
+            argb.evaluate((f - 0.5f) / 0.5f, colorAmber, colorGreen) as Int
         }
-        circularProgress.setIndicatorColor(color)
     }
 
-    private fun interpolateColor(startColor: Int, endColor: Int, fraction: Float): Int {
-        val r = fraction.coerceIn(0f, 1f)
-        val red = Math.round(Color.red(startColor) + (Color.red(endColor) - Color.red(startColor)) * r)
-        val green = Math.round(Color.green(startColor) + (Color.green(endColor) - Color.green(startColor)) * r)
-        val blue = Math.round(Color.blue(startColor) + (Color.blue(endColor) - Color.blue(startColor)) * r)
-        return Color.rgb(red, green, blue)
+    private fun updateProgress() {
+        if (plannedMillis <= 0L) return
+
+        val fraction = actualStudyMillis().toFloat() / plannedMillis
+        val percent = (fraction * 100).toInt().coerceIn(0, 100)
+        val color = progressColor(fraction)
+
+        circularProgress.setProgressCompat(percent, true)
+        circularProgress.setIndicatorColor(color)
+
+        sessionProgress.setProgressCompat(percent, true)
+        sessionProgress.setIndicatorColor(color)
+        txtSessionPercent.text = "$percent% of planned time"
+
+        updateSessionCard()
+    }
+
+    private fun updateSessionCard() {
+        val (label, color) = when {
+            sessionSaved -> "Saved" to colorGreen
+            isSaving -> "Saving…" to colorBlue
+            !sessionStarted -> "Not started" to colorGrey
+            isTimerRunning && isBreakPhase -> "On break" to colorBlue
+            isTimerRunning -> "Studying" to colorGreen
+            else -> "Paused" to colorAmber
+        }
+        txtSessionStatus.text = label
+        statusChip.setCardBackgroundColor(color)
+        txtFocused.text = "${calculateActualDuration()} min"
+    }
+
+    private fun updateTimerDisplay(time: Long) {
+        txtTimer.text = formatTime(time)
+    }
+
+    private fun formatTime(milliseconds: Long): String {
+        val totalSeconds = milliseconds / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+    }
+
+    private fun updateButtons() {
+        val canResume = sessionStarted && !isTimerRunning && !sessionSaved
+        val canEnd = sessionStarted && !sessionSaved
+
+        btnStart.visibility = if (!sessionStarted) View.VISIBLE else View.GONE
+        btnPause.visibility = if (isTimerRunning && !sessionSaved) View.VISIBLE else View.GONE
+        btnResume.visibility = if (canResume) View.VISIBLE else View.GONE
+        btnEnd.visibility = if (canEnd) View.VISIBLE else View.GONE
+
+        btnStart.isEnabled = !isSaving
+        btnPause.isEnabled = isTimerRunning && !isSaving
+        btnResume.isEnabled = canResume && !isSaving
+        btnEnd.isEnabled = canEnd && !isSaving
+
+        updateSessionCard()
     }
 
     override fun onDestroy() {
-        cancelPendingTransition()
-        countDownTimer?.cancel()
+        timer?.cancel()
+        timer = null
         super.onDestroy()
     }
 }

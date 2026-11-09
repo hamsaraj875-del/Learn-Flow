@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.learnflow.data.model.Request
 import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.remote.RetrofitClient
 import com.example.learnflow.data.repository.SessionRepository
@@ -37,12 +38,14 @@ class SessionCreate : AppCompatActivity() {
         val editSessionName = findViewById<EditText>(R.id.editSessionName)
         val sessionCreateBtn = findViewById<MaterialButton>(R.id.btnCreateSession)
         val createSessionLoader = findViewById<ProgressBar>(R.id.createSessionLoader)
+        val btnChatHistory = findViewById<MaterialButton>(R.id.btnChatHistory);
         val chip25Min = findViewById<Chip>(R.id.chip25Min)
         val chip45Min = findViewById<Chip>(R.id.chip45Min)
         val chip60Min = findViewById<Chip>(R.id.chip60Min)
         val chip90Min = findViewById<Chip>(R.id.chip90Min)
 
         val sessionRepository = SessionRepository(RetrofitClient.api)
+        btnChatHistory.visibility = View.GONE;
 
         userId = intent.getStringExtra("userId") ?: ""
         createSessionLoader.visibility = View.GONE
@@ -61,6 +64,23 @@ class SessionCreate : AppCompatActivity() {
 
         chip90Min.setOnClickListener {
             editDuration.setText("90")
+        }
+
+        lifecycleScope.launch{
+            try{
+                var response = sessionRepository.sessionList(Request(userId));
+                if(response.success && !response.sessionList.isEmpty()){
+                    btnChatHistory.visibility = View.VISIBLE;
+                }
+            }catch(e:Exception){
+                println(e.message);
+            }
+        }
+
+        btnChatHistory.setOnClickListener{
+            var intent = Intent(this@SessionCreate,SessionHistory::class.java);
+            intent.putExtra("userId",userId);
+            startActivity(intent);
         }
 
         sessionCreateBtn.setOnClickListener {
@@ -93,19 +113,16 @@ class SessionCreate : AppCompatActivity() {
                         Session( "",userId, sessionName, startTime.toDouble(), 0L, duration, 0L, "pending"))
 
                     if (response.success) {
-                        val sessionIntent = Intent(
-                            this@SessionCreate,
-                            SessionTracker::class.java
-                        )
+                        val sessionIntent = Intent(this@SessionCreate, SessionTracker::class.java)
                         sessionIntent.putExtra("userId", userId)
+                        sessionIntent.putExtra("sessionId",response.mes);
                         sessionIntent.putExtra("sessionName", sessionName)
                         sessionIntent.putExtra("plannedDuration", duration)
                         sessionIntent.putExtra("startTime", startTime)
                         sessionIntent.putExtra("id",response.mes);
                         startActivity(sessionIntent)
+                        finish();
                     }
-
-                    Toast.makeText(this@SessionCreate, response.mes, Toast.LENGTH_SHORT).show()
 
                 } catch (err: Exception) {
                     Toast.makeText(this@SessionCreate, err.message ?: "Something went wrong", Toast.LENGTH_SHORT).show()

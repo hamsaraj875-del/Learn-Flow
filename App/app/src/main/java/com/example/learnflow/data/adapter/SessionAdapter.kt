@@ -1,4 +1,3 @@
-
 package com.example.learnflow.adapter
 
 import android.view.LayoutInflater
@@ -62,13 +61,9 @@ class SessionAdapter(
             Locale.getDefault()
         )
 
-        holder.sessionDate.text =
-            dateFormat.format(Date(session.startTime.toLong()))
+        holder.sessionDate.text = dateFormat.format(Date(session.startTime.toLong()))
 
-        val minutes = session.actualDuration / 60000
-
-        holder.sessionDuration.text =
-            "Duration: $minutes min"
+        holder.sessionDuration.text = "Duration: $session.actualDuration min"
 
         holder.sessionStatus.text = session.status
 
@@ -113,13 +108,16 @@ class SessionAdapter(
     fun clearSessions() {
         val size = sessions.size
         sessions.clear()
-        notifyItemRangeRemoved(0, size)
+
+        if (size > 0) {
+            notifyItemRangeRemoved(0, size)
+        }
     }
 
+    // Set sessions from API
     fun setSessions(newSessions: List<Session>) {
         sessions.clear()
         sessions.addAll(newSessions)
         notifyDataSetChanged()
     }
-
 }

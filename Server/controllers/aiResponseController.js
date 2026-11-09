@@ -6,6 +6,7 @@ const { PDFParse } = require("pdf-parse");
 //internal modules
 
 const generateResponse = require("../services/openAi");
+const messages = require("../models/messages");
 
 
 //ai response generator
@@ -57,3 +58,74 @@ exports.openAiResult = async (req, res, next) => {
         });
     }
 };
+
+
+
+//user document handled responses
+
+exports.documentOpenAiResult=async(req,res,next)=>{
+    const pdf = req.file;
+    const question = req.body.question
+    console.log("===question is recieved with the document===");
+    console.log(question);
+    const pdfBuffer = pdf.buffer;
+    try{
+        const text = await extractPdfText(pdfBuffer);
+        console.log(text)
+        return res.status(200).json({
+            response:"I have got the pdf what's next?,should i scan it?"
+        })
+    }catch(err){
+        console.log(err);
+    }
+}
+
+
+
+//extraction of plain text in the document
+
+const extractPdfText = async (pdfBuffer) => {
+    const parser = new PDFParse({
+        data: pdfBuffer
+    });
+    try {
+        const result = await parser.getText();
+
+        if (!result.text || !result.text.trim()) {
+            throw new Error(
+                "No text found. This PDF may be scanned or image-based."
+            );
+        }
+        return result.text;
+    } catch (err) {
+        console.error("PDF extraction failed:", err);
+        throw err;
+    } finally {
+        await parser.destroy();
+    }
+};
+
+
+
+
+async function test() {
+    const pdfBuffer = fs.readFileSync("./uploads/test.pdf");
+
+    console.log("Is buffer:", Buffer.isBuffer(pdfBuffer));
+    console.log("Size:", pdfBuffer.length);
+    console.log("Header:", pdfBuffer.subarray(0, 5).toString());
+
+    const parser = new PDFParse({
+        data: new Uint8Array(pdfBuffer)
+    });
+
+    try {
+        const result = await parser.getText();
+        console.log(result.text);
+    } catch (err) {
+        console.log(err);
+        console.error("Parsing error:", err);
+    } finally {
+        await parser.destroy();
+    }
+}

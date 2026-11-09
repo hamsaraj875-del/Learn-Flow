@@ -4,6 +4,7 @@ package com.example.learnflow
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,14 +20,36 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.learnflow.data.model.Request
+import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.remote.RetrofitClient
-import com.example.learnflow.data.repository.ChatRepository
+import com.github.mikephil.charting.data.Entry
 import com.example.learnflow.data.repository.LoginRepository
+import com.example.learnflow.data.repository.SessionRepository
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var userId:String;
+    private lateinit var loginRepository:LoginRepository;
+    private lateinit var progressBar:ProgressBar;
+    private lateinit var btn:FrameLayout;
+    private lateinit var greeting:TextView;
+    private lateinit var txtAccuracy:TextView;
+    private lateinit var txtConsistancy:TextView;
+    private lateinit var txtStreak:TextView;
+    private lateinit var txtCount :TextView;
+    private lateinit var sessionRepository : SessionRepository;
+    private lateinit var sessionList : MutableList<Session>;
+    private lateinit var performanceChart: LineChart
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -51,34 +75,25 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        var progressBar = findViewById<ProgressBar>(R.id.loader)
-        var btn = findViewById<FrameLayout>(R.id.navAI)
+
+        progressBar = findViewById(R.id.loader)
+        btn = findViewById(R.id.navAI)
+        greeting = findViewById(R.id.txtGreeting);
+        txtCount = findViewById(R.id.txtCount);
+        txtStreak = findViewById(R.id.txtStreak);
+        txtAccuracy = findViewById(R.id.txtAccuracy);
+        txtConsistancy = findViewById(R.id.txtConsistancy);
         var focus = findViewById<LinearLayout>(R.id.navFocus)
         var session = findViewById<LinearLayout>(R.id.navSession);
+        performanceChart = findViewById(R.id.performanceChart)
 
-        val chatRepository = LoginRepository(RetrofitClient.api)
+        sessionRepository = SessionRepository(RetrofitClient.api);
+        loginRepository = LoginRepository(RetrofitClient.api)
         btn.visibility = View.GONE
 
-        lifecycleScope.launch {
-            try {
-                var response = chatRepository.userIsLoggedIn()
-                if (!response.success) {
-                    var intent = Intent(this@MainActivity, Promo::class.java)
-                    startActivity(intent)
-                    finish();
-                    return@launch
-                } else {
-                    userId = response.userId
-                    progressBar.visibility = View.GONE
-                    btn.visibility = View.VISIBLE
-                }
-            } catch (e: Exception) {
-                var intent = Intent(this@MainActivity, Promo::class.java)
-                startActivity(intent)
-            } finally {
-                progressBar.visibility = View.GONE
-            }
-        }
+
+        initializeGraph()
+        userLoginCheck();
 
         btn.setOnClickListener {
             var intent = Intent(this@MainActivity, ChatTopic::class.java)
@@ -99,6 +114,167 @@ class MainActivity : AppCompatActivity() {
             var intent = Intent(this@MainActivity,SessionCreate::class.java);
             intent.putExtra("userId",userId);
             startActivity(intent);
+        }
+    }
+
+    private fun userLoginCheck(){
+        lifecycleScope.launch {
+            try {
+                var response = loginRepository.userIsLoggedIn()
+                if (!response.success) {
+                    var intent = Intent(this@MainActivity, Promo::class.java)
+                    startActivity(intent)
+                    finish();
+                    return@launch
+                } else {
+                    userId = response.userId
+                    if(userId.isEmpty()){
+                        Toast.makeText(this@MainActivity,"Setting up the app ,please wait a while",Toast.LENGTH_SHORT).show();
+                        return@launch;
+                    }
+                    progressBar.visibility = View.GONE
+                    btn.visibility = View.VISIBLE
+                    greeting.text = "Hello, ${response.name}! "+greeting.text.toString();
+                    userAnalysis();
+                }
+            } catch (e: Exception) {
+                var intent = Intent(this@MainActivity, Promo::class.java)
+                startActivity(intent)
+            } finally {
+                progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun userAnalysis(){
+        lifecycleScope.launch{
+            try{
+                var response = sessionRepository.userAnalysis(Request(userId));
+                if(response.success){
+                    sessionList();
+                    txtCount.text = response.analysis.sessionCompletion.toString()+"/"+response.analysis.sessionCount;
+                    txtStreak.text = response.analysis.streak.toString();
+                    txtAccuracy.text = response.analysis.accuracy.toString();
+                    txtConsistancy.text = response.analysis.consistancy.toString()+"%";
+                }
+            }catch(e:Exception){
+                println(e.message);
+            }
+        }
+    }
+
+    private fun sessionList(){
+        lifecycleScope.launch{
+            try{
+                var response = sessionRepository.sessionList(Request(userId));
+                if(response.success){
+                    sessionList = response.sessionList;
+                    updatePerformanceGraph(sessionList);
+                }
+            }catch(e:Exception){
+                Toast.makeText(this@MainActivity,"Data recovery has failed",Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    override fun onResume() {
+        super.onResume()
+        if (::userId.isInitialized && userId.isNotEmpty()) {
+            userAnalysis()
+        }
+    }
+
+
+    private fun initializeGraph() {
+        performanceChart.apply {
+            description.isEnabled = false
+            legend.isEnabled = false
+            setBackgroundColor(Color.TRANSPARENT)
+            setDrawGridBackground(false)
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(false)
+            axisLeft.apply {
+                axisMinimum = 0f
+                axisMaximum = 100f
+                granularity = 20f
+                textColor = Color.LTGRAY
+                textSize = 10f
+                setDrawGridLines(true)
+                gridColor = Color.DKGRAY
+            }
+            axisRight.isEnabled = false
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                textColor = Color.LTGRAY
+                textSize = 10f
+                setDrawGridLines(false)
+                granularity = 1f
+            }
+            setNoDataText("Complete your first study session!")
+            setNoDataTextColor(Color.LTGRAY)
+        }
+    }
+
+    private fun updatePerformanceGraph(sessionList: MutableList<Session>) {
+        val createdEntries = ArrayList<Entry>()
+        val completedEntries = ArrayList<Entry>()
+        val labels = ArrayList<String>()
+        val calendar = Calendar.getInstance()
+        for (i in 6 downTo 0) {
+            calendar.timeInMillis = System.currentTimeMillis()
+            calendar.add(Calendar.DAY_OF_YEAR, -i)
+            val dayStart = calendar.clone() as Calendar
+            dayStart.set(Calendar.HOUR_OF_DAY, 0)
+            dayStart.set(Calendar.MINUTE, 0)
+            dayStart.set(Calendar.SECOND, 0)
+            dayStart.set(Calendar.MILLISECOND, 0)
+            val start = dayStart.timeInMillis
+            val end = start + 24 * 60 * 60 * 1000L
+            val daySessions = sessionList.filter {
+                it.startTime >= start && it.startTime < end
+            }
+            val created = daySessions.size
+            val completed = daySessions.count {
+                it.status.equals("completed", ignoreCase = true)
+            }
+            createdEntries.add(Entry((6 - i).toFloat(), created.toFloat()))
+            completedEntries.add(Entry((6 - i).toFloat(), completed.toFloat()))
+
+            labels.add(
+                SimpleDateFormat("EEE", Locale.getDefault())
+                    .format(dayStart.time)
+            )
+        }
+        val createdDataSet = LineDataSet(createdEntries, "Created").apply {
+            color = Color.rgb(255, 152, 0)
+            setCircleColor(Color.rgb(255, 152, 0))
+            lineWidth = 2.5f
+            circleRadius = 4f
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+            setDrawValues(false)
+        }
+        val completedDataSet = LineDataSet(completedEntries, "Completed").apply {
+            color = Color.rgb(76, 175, 80)
+            setCircleColor(Color.rgb(76, 175, 80))
+            lineWidth = 2.5f
+            circleRadius = 4f
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+            setDrawValues(false)
+        }
+        val highestSessionCount = maxOf(
+            createdEntries.maxOfOrNull { it.y } ?: 0f,
+            completedEntries.maxOfOrNull { it.y } ?: 0f
+        )
+        performanceChart.apply {
+            data = LineData(createdDataSet, completedDataSet)
+            axisLeft.axisMinimum = 0f
+            axisLeft.axisMaximum = highestSessionCount + 5f
+            axisLeft.granularity = 1f
+            xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+            xAxis.axisMinimum = 0f
+            xAxis.axisMaximum = 6f
+            animateX(1000)
+            invalidate()
         }
     }
 }

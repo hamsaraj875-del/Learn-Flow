@@ -75,7 +75,7 @@ app.use("/user",loginRouter);
 
 app.post("/chat",aiResponseController.openAiResult);
 app.post("/userAnalysis",controller.userAnalysis);
-app.post("/document",controller.documentOpenAiResult);
+app.post("/document",aiResponseController.documentOpenAiResult);
 app.post("/new_chat",controller.createNewChat);
 app.post("/chatlist",controller.chatList);
 app.post("/conversation/messages",controller.messageHistory);

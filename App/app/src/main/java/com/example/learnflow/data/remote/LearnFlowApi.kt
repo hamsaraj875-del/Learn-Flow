@@ -15,6 +15,7 @@ import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.model.SessionList
 import com.example.learnflow.data.model.SignUpRequest
+import com.example.learnflow.data.model.UserAnalysis
 import com.example.learnflow.data.model.userData
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -73,6 +74,11 @@ interface LearnFlowApi {
     suspend fun updateSession(
         @Body request:Session
     ): Response;
+
+    @POST("userAnalysis")
+    suspend fun userAnalysis(
+        @Body request:Request
+    ): UserAnalysis
 
     @POST("user/loggedIn")
     suspend fun userIsLoggedIn(): userData

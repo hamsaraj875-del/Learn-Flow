@@ -77,6 +77,8 @@ class ChatTopic : AppCompatActivity() {
                     conversationId = response.conversationId;
                     btnChatHistory.visibility = View.VISIBLE;
                     Toast.makeText(this@ChatTopic,"History recovered",Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(this@ChatTopic,"History Not Found",Toast.LENGTH_SHORT).show();
                 }
             }
             catch(e:Exception){
@@ -102,6 +104,7 @@ class ChatTopic : AppCompatActivity() {
             intent.putExtra("userId",userId);
             intent.putExtra("conversationId",conversationId);
             startActivity(intent);
+            finish()
         }
 
         startChat.setOnClickListener{
