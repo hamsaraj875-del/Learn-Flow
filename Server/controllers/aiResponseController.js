@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const { PDFParse } = require("pdf-parse");
+const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 
 //internal modules
 
@@ -106,26 +107,84 @@ const extractPdfText = async (pdfBuffer) => {
 };
 
 
-
-
-async function test() {
-    const pdfBuffer = fs.readFileSync("./uploads/test.pdf");
-
-    console.log("Is buffer:", Buffer.isBuffer(pdfBuffer));
-    console.log("Size:", pdfBuffer.length);
-    console.log("Header:", pdfBuffer.subarray(0, 5).toString());
-
+const tester = async()=>{
+    const pdfBuffer = fs.readFileSync("./uploads/test.pdf")
     const parser = new PDFParse({
         data: new Uint8Array(pdfBuffer)
     });
-
     try {
         const result = await parser.getText();
-        console.log(result.text);
-    } catch (err) {
-        console.log(err);
-        console.error("Parsing error:", err);
+        const text = result.text;
+        await textChunker(text);
+    } catch (error) {
+        console.error(error);
     } finally {
         await parser.destroy();
     }
 }
+tester();
+
+
+//Text to chunker convertor
+
+const textChunker = async (text) => {
+    const splitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 3000,
+        chunkOverlap: 300,
+        separators: ["\n\n", "\n", " ", ""]
+    });
+
+    const chunks = await splitter.splitText(text);
+    const embeddings = await generateEmbeddings(chunks);
+};
+
+//embbeding generation by gemini api
+
+const embedText = async (text, taskType) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
+            },
+            body: JSON.stringify({
+                content: {
+                    parts: [{ text }]
+                },
+                taskType
+            })
+        }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(
+            data.error?.message || "Embedding generation failed"
+        );
+    }
+    return data.embedding.values;
+};
+
+
+
+//embedding generator by passing chunks to gemini
+
+const generateEmbeddings = async (chunks) => {
+    const embeddings = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const vector = await embedText(
+            chunks[i],
+            "RETRIEVAL_DOCUMENT"
+        );
+        embeddings.push(vector);
+        console.log(`Generated embedding ${i + 1}/${chunks.length}`);
+    }
+    return embeddings;
+};
+
+
+const generateQueryEmbedding = async (question) => {
+    return await embedText(question, "RETRIEVAL_QUERY");
+};
