@@ -13,6 +13,7 @@ const MongoStore = require("connect-mongo").default;
 //internal modules
 
 const controller  = require("../controllers/controller");
+const aiResponseController = require("../controllers/aiResponseController");
 const PORT = process.env.PORT || 3000;
 const db = process.env.DB
 
@@ -72,7 +73,7 @@ app.use("/user",loginRouter);
 
 //main routes handling
 
-app.post("/chat",controller.openAiResult);
+app.post("/chat",aiResponseController.openAiResult);
 app.post("/userAnalysis",controller.userAnalysis);
 app.post("/document",controller.documentOpenAiResult);
 app.post("/new_chat",controller.createNewChat);

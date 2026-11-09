@@ -15,6 +15,7 @@ const database = require("../models/database");
 
 exports.loggedIn=(req,res,next)=>{
   console.log("===login check===");
+  console.log(req.session.userName);
   if(req.session.isLoggedIn){
     return res.status(200).json({
       success:true,
@@ -151,14 +152,14 @@ exports.otp = async (req, res, next) => {
       mes: "Invalid OTP"
     });
   }
-  const { name:user, email, password: passCode } = req.session.userDetails;
+  const { name, email, password: passCode } = req.session.userDetails;
   try {
     console.log("=== Otp sent ===");
     const password = await bcrypt.hash(passCode, 10);
-    const details = new database({user,email,password});
+    const details = new database({name,email,password});
     const userId = await details.save();
     req.session.userId = userId._id;
-    req.session.userName = user;
+    req.session.userName = name;
     req.session.isLoggedIn = true;
     delete req.session.otp;
     delete req.session.userDetails;
@@ -174,7 +175,7 @@ exports.otp = async (req, res, next) => {
       return res.json({
         success: true,
         userId:userId._id,
-        name:user,
+        name:name,
       });
     });
   } catch (err) {

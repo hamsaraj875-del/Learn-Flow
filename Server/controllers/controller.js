@@ -1,8 +1,5 @@
 //external modules
 
-const { PDFParse } = require("pdf-parse");
-const generateResponse = require("../services/openAi");
-const fs = require("fs");
 
 
 //internal modules
@@ -13,63 +10,11 @@ const conversation = require("../models/conversation");
 const studySession = require("../models/studySession");
 
 
-//asynchronous support functions
-
-exports.openAiResult = async (req, res, next) => {
-    const question = req.body;
-    try {
-        const userMessage = new messages({
-            conversationId:question.conversationId,
-            userId:req.session.userId,
-            role: "user",
-            content: question.question
-        });
-        await userMessage.save();
-        console.log("====user question saved=====")
-
-        const ai_question = await messages
-            .find({conversationId:question.conversationId,userId:req.session.userId})
-            .sort({ _id: -1 })
-            .limit(5)
-            .select("role content -_id")
-            .lean();
-
-        ai_question.reverse();
-
-        const conversation = ai_question.map(message => ({
-            role: message.role,
-            content: String(message.content)
-        }));
-        console.log("===conversation===");
-        const response = await generateResponse(conversation);
-
-        const assistantMessage = new messages({
-            conversationId:question.conversationId,
-            userId:req.session.userId,
-            role: "assistant",
-            content: response
-        });
-        await assistantMessage.save();
-        console.log("====ai response saved====");
-        res.status(200).json({
-            response: response
-        });
-    } catch (error) {
-        console.error("Open Ai API error:");
-        console.error(error);
-        res.status(500).json({
-            error: "Internal Server Error"
-        });
-    }
-};
-
-
 //User Analysis Details
 
 exports.userAnalysis = async(req,res,next)=>{
     console.log("=== user analysis ===");
     const data = req.body;
-
     try{
         const user = await database.findById(data.userId);
         if(!user){
@@ -78,35 +23,29 @@ exports.userAnalysis = async(req,res,next)=>{
                 analysis : {sessionCount:0,sessionCompletion:0,accuracy:0,consistency:0,streak:0}
             })
         }
-
         const session = await studySession.find({userId:req.session.userId}).sort({_id:-1});
         const sessionCount = session.length;
         var sessionCompletion = 0;
-        for(i in session){
-            if(i.plannedDuration == i.actualDuration){
+        for (const item of session) {
+            if (item.status === "completed") {
                 sessionCompletion++;
             }
         }
+        const completedDates = new Set(session.filter(s => s.status === "completed").map(s => new Date(s.startTime).toISOString().split("T")[0]));
         let streak = 0;
-        for (let i = 0; i < session.length - 1; i++) {
-            const current = new Date(session[i].startTime);
-            const previous = new Date(session[i + 1].startTime);
-            const diff = Math.floor((current - previous) / (1000 * 60 * 60 * 24));
-            if (diff > 1) {
-                break;
-            }else{
-                streak++;
-            }
+        let date = new Date();
+        while (completedDates.has(date.toISOString().split("T")[0])) {
+            streak++;
+            date.setDate(date.getDate() - 1);
         }
-
         const accuracy = 0;
-        const firstSession = await studySession.findOne({ userId:req.session.userId }).sort({ startTime: 1 });
-        const totalDays = firstSession? Math.floor((Date.now() - firstSession.startTime) / (1000 * 60 * 60 * 24)) + 1: 0;
-        const consistency = totalDays/totalDays;
-
+        const firstSession = await studySession.findOne({userId: req.session.userId}).sort({ startTime: 1 });
+        const totalDays = firstSession? Math.floor((Date.now() - firstSession.startTime) / 86400000) + 1: 0;
+        const activeDays = new Set(session.filter(s => s.status === "completed").map(s => new Date(s.startTime).toISOString().split("T")[0])).size;
+        const consistancy = totalDays > 0 ? Math.round((activeDays / totalDays) * 100): 0;
         return res.status(200).json({
             success:true,
-            analysis : {sessionCount:sessionCount,sessionCompletion:sessionCompletion,accuracy:0,consistency:consistency,streak:streak}
+            analysis : {sessionCount:sessionCount,sessionCompletion:sessionCompletion,accuracy:0,consistancy:consistancy,streak:streak}
         })
 
     }catch(err){
@@ -163,6 +102,7 @@ exports.createNewChat=async(req,res,next)=>{
 
 }
 
+//chat list export
 
 exports.chatList = async(req,res,next)=>{
     console.log("=== chat list ====");
@@ -215,26 +155,21 @@ exports.lastMessageHistory = async(req,res,next)=>{
 
 exports.history = async(req,res,next)=>{
     const data = req.body;
-
     try{
         const user = await database.findById(data.userId);
-
         if(!user){
-            return res.status(500).json({
+            return res.status(200).json({
                 success:false,
                 conversationId:"",
             })
         }
-
         const conversate = await conversation.findOne({userId:req.session.userId}).sort({_id:-1});
-
         if(!conversate){
-            return res.status(500).json({
+            return res.status(200).json({
                 success:false,
                 conversationId:"",
             })
         }
-
         return res.status(200).json({
             success:true,
             conversationId:conversate._id,
@@ -285,6 +220,8 @@ exports.messageHistory = async(req,res,next)=>{
 }
 
 
+//session creation
+
 exports.createSession = async(req,res,next)=>{
     console.log("=== create session ===");
     const data = req.body;
@@ -312,6 +249,8 @@ exports.createSession = async(req,res,next)=>{
     }
 }
 
+// session list export
+
 exports.sessionList = async(req,res,next)=>{
     console.log("=== session list ===");
     const data = req.body;
@@ -323,9 +262,7 @@ exports.sessionList = async(req,res,next)=>{
                 mes:"user not found unauthorized access",
             })
         }
-        const sessionList = await studySession.find({userId:req.session.userId});
-        console.log(sessionList);
-
+        const sessionList = await studySession.find({userId:req.session.userId});  
         return res.status(200).json({
             success:true,
             sessionList:sessionList,
