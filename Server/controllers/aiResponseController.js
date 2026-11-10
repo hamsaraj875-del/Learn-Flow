@@ -7,7 +7,11 @@ const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 //internal modules
 
 const generateResponse = require("../services/openAi");
+const documents = require("../models/documents");
+const textChunk = require("../models/textChunk");
 const messages = require("../models/messages");
+const classifier = require("../services/classifier");
+const generateRagResponse = require("../services/ragAi");
 
 
 //ai response generator
@@ -37,20 +41,55 @@ exports.openAiResult = async (req, res, next) => {
             role: message.role,
             content: String(message.content)
         }));
-        console.log("===conversation===");
-        const response = await generateResponse(conversation);
 
-        const assistantMessage = new messages({
-            conversationId:question.conversationId,
-            userId:req.session.userId,
-            role: "assistant",
-            content: response
-        });
-        await assistantMessage.save();
-        console.log("====ai response saved====");
-        res.status(200).json({
-            response: response
-        });
+
+        const type = await classifier(question.question,conversation.slice(0,-1));
+        console.log(type);
+        if(type=="PDF" || type=="MIXED"){
+            const pdf = await pdfFinder(req.session.userId,question.conversationId);
+
+            if (!pdf) {
+                console.log("pdf not found");
+                return res.status(200).json({
+                    response: "Please upload a PDF in this conversation so I can answer your question from it."
+                });
+            }
+
+            const queryEmbeddings = (await generateEmbeddings([question.question]))[0];
+            const context = await chunkFinder(question.conversationId,queryEmbeddings);
+            const prompt = [
+                {
+                    role: "user",
+                    content: `
+                    Document Context:
+                    ${context}
+
+                    Question:
+                    ${question.question}
+                `
+                }
+            ];
+            const answer = await generateRagResponse(prompt);
+            return res.status(200).json({
+                response:answer
+            })
+
+        }else{
+            console.log("===conversation===");
+            const response = await generateResponse(conversation);
+
+            const assistantMessage = new messages({
+                conversationId:question.conversationId,
+                userId:req.session.userId,
+                role: "assistant",
+                content: response
+            });
+            await assistantMessage.save();
+            console.log("====ai response saved====");
+            res.status(200).json({
+                response: response
+            });
+        }
     } catch (error) {
         console.error("Open Ai API error:");
         console.error(error);
@@ -61,25 +100,131 @@ exports.openAiResult = async (req, res, next) => {
 };
 
 
+//pdf finder in the conversation
+
+const pdfFinder = async(userId,conversationId)=>{
+    try{
+        const pdf = await documents.findOne({userId:userId,conversationId:conversationId}).sort({_id:-1});
+        return pdf || null;
+    }
+    catch(err){
+        console.log(err);
+        return null;
+    }
+}
+
+
+//chunk finder in the document for document based response
+
+const chunkFinder = async(conversationId,queryEmbeddings)=>{
+    try{
+        const chunks = await documents.find({userId:req.session.userId,conversationId:conversationId}).select("text embedding chunkIndex")
+        const results = chunks.map((chunk, index) => ({
+            text: chunk.text,
+            score: cosineSimilarity(
+                queryEmbeddings,
+                pdfEmbeddings[index]
+            )
+        }));
+        results.sort((a, b) => b.score - a.score);
+        const relevantChunks = results.slice(0, 5);
+        const context = relevantChunks.map(chunk => chunk.text).join("\n\n");
+
+        if(context){
+            return context;
+        }
+        return "";
+    }catch(err){
+        console.log(err);
+        return "";
+    }
+}
+
 
 //user document handled responses
 
 exports.documentOpenAiResult=async(req,res,next)=>{
     const pdf = req.file;
-    const question = req.body.question
+    const question = req.body.question;
+    const conversationId = req.body.conversationId;
+
+    if(!pdf){
+        return res.status(500).json({
+            response:"i didn't got any pdf please try again"
+        })
+    }
+
+    const document = new documents({_id:req.documentId,userId:req.session.userId,conversationId:conversationId,fileName:pdf.originalname,filePath:pdf.path})
+    await document.save();
+    const pdfBuffer = fs.readFileSync(pdf.path);
     console.log("===question is recieved with the document===");
-    console.log(question);
-    const pdfBuffer = pdf.buffer;
     try{
-        const text = await extractPdfText(pdfBuffer);
-        console.log(text)
+        const pdfText = await extractPdfText(pdfBuffer);
+        const chunks = await textChunker(pdfText);
+        const pdfEmbeddings = await generateEmbeddings(chunks);
+        const queryEmbeddings = (await generateEmbeddings([question]))[0];
+
+        const chunkDocuments = chunks.map((chunk, index) => ({
+            documentId: req.documentId,
+            userId: req.session.userId,
+            chunkIndex: index,
+            text: chunk,
+            embedding: pdfEmbeddings[index]
+        }));
+        await textChunk.insertMany(chunkDocuments);
+
+        const results = chunks.map((chunk, index) => ({
+            text: chunk,
+            score: cosineSimilarity(
+                queryEmbeddings,
+                pdfEmbeddings[index]
+            )
+        }));
+        results.sort((a, b) => b.score - a.score);
+        const relevantChunks = results.slice(0, 5);
+        const context = relevantChunks.map(chunk => chunk.text).join("\n\n");
+
+        const prompt = [
+            {
+                role: "user",
+                content: `
+                Document Context:
+                ${context}
+
+                Question:
+                ${question}
+            `
+            }
+        ];
+        const answer = await generateRagResponse(prompt);
         return res.status(200).json({
-            response:"I have got the pdf what's next?,should i scan it?"
+            response:answer
         })
     }catch(err){
         console.log(err);
     }
 }
+
+//similarity in the embeddings using consine similaryity algorithm
+
+const cosineSimilarity = (vectorA, vectorB) => {
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+        dotProduct += vectorA[i] * vectorB[i];
+        magnitudeA += vectorA[i] * vectorA[i];
+        magnitudeB += vectorB[i] * vectorB[i];
+    }
+
+    if (magnitudeA === 0 || magnitudeB === 0) {
+        return 0;
+    }
+
+    return dotProduct / (Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB));
+};
+
 
 
 
@@ -107,22 +252,7 @@ const extractPdfText = async (pdfBuffer) => {
 };
 
 
-const tester = async()=>{
-    const pdfBuffer = fs.readFileSync("./uploads/test.pdf")
-    const parser = new PDFParse({
-        data: new Uint8Array(pdfBuffer)
-    });
-    try {
-        const result = await parser.getText();
-        const text = result.text;
-        await textChunker(text);
-    } catch (error) {
-        console.error(error);
-    } finally {
-        await parser.destroy();
-    }
-}
-tester();
+
 
 
 //Text to chunker convertor
@@ -135,7 +265,7 @@ const textChunker = async (text) => {
     });
 
     const chunks = await splitter.splitText(text);
-    const embeddings = await generateEmbeddings(chunks);
+    return chunks;
 };
 
 //embbeding generation by gemini api

@@ -15,7 +15,6 @@ const database = require("../models/database");
 
 exports.loggedIn=(req,res,next)=>{
   console.log("===login check===");
-  console.log(req.session.userName);
   if(req.session.isLoggedIn){
     return res.status(200).json({
       success:true,

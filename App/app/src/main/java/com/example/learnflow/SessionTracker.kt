@@ -31,8 +31,6 @@ class SessionTracker : AppCompatActivity() {
     private lateinit var btnPause: Button
     private lateinit var btnResume: Button
     private lateinit var btnEnd: Button
-
-    // Current session card
     private lateinit var statusChip: MaterialCardView
     private lateinit var txtSessionStatus: TextView
     private lateinit var txtSessionName: TextView
@@ -41,35 +39,25 @@ class SessionTracker : AppCompatActivity() {
     private lateinit var txtPlanned: TextView
     private lateinit var txtFocused: TextView
     private lateinit var txtStartedAt: TextView
-
     private lateinit var userId: String
     private lateinit var sessionName: String
     private lateinit var sessionId: String
-
     private var plannedDuration = 0L
     private var plannedMillis = 0L
-
     private var startTime = 0L
     private var endTime = 0L
-
     private val studyDuration = 25 * 60 * 1000L
     private val breakDuration = 5 * 60 * 1000L
-
     private var remainingStudyTime = 0L
     private var currentStudyBlock = 0L
     private var remainingTime = 0L
-
     private var isBreakPhase = false
     private var isTimerRunning = false
     private var sessionStarted = false
     private var sessionSaved = false
     private var isSaving = false
-
     private var timer: CountDownTimer? = null
-
     private lateinit var sessionRepository: SessionRepository
-
-    // Colors
     private val colorRed = Color.parseColor("#E53935")
     private val colorAmber = Color.parseColor("#FFB300")
     private val colorGreen = Color.parseColor("#43A047")
@@ -101,7 +89,6 @@ class SessionTracker : AppCompatActivity() {
 
         sessionRepository = SessionRepository(RetrofitClient.api)
 
-        // Null-safe: getStringExtra(...).toString() would turn null into the text "null"
         userId = intent.getStringExtra("userId") ?: ""
         sessionName = intent.getStringExtra("sessionName") ?: ""
         sessionId = intent.getStringExtra("sessionId") ?: ""
@@ -132,7 +119,6 @@ class SessionTracker : AppCompatActivity() {
 
     private fun startSession() {
         if (sessionStarted || sessionSaved || isSaving) return
-
         sessionStarted = true
         startTime = System.currentTimeMillis()
         txtStartedAt.text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(startTime))
@@ -159,15 +145,14 @@ class SessionTracker : AppCompatActivity() {
     private fun startCountdown(duration: Long) {
         timer?.cancel()
         isTimerRunning = true
+        updateTimerDisplay(remainingTime)
+        updateProgress()
         updateButtons()
         timer = object : CountDownTimer(duration, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 remainingTime = millisUntilFinished
-                txtTimer.text = if (isBreakPhase) {
-                    "Break\n${formatTime(millisUntilFinished)}"
-                } else {
-                    "Study\n${formatTime(millisUntilFinished)}"
-                }
+                val phase = if (isBreakPhase) "BREAK" else "STUDY"
+                txtTimer.text = "$phase\n${formatTime(millisUntilFinished)}"
                 updateProgress()
             }
 
@@ -220,7 +205,6 @@ class SessionTracker : AppCompatActivity() {
         updateButtons()
     }
 
-    /** Study time done so far, in milliseconds (breaks are not counted). */
     private fun actualStudyMillis(): Long {
         val completedStudyTime = plannedMillis - remainingStudyTime
         val currentBlockProgress = if (!isBreakPhase && sessionStarted) {
@@ -228,12 +212,17 @@ class SessionTracker : AppCompatActivity() {
         } else {
             0L
         }
-        return (completedStudyTime + currentBlockProgress).coerceIn(0L, plannedMillis)
+        return (completedStudyTime + currentBlockProgress)
+            .coerceIn(0L, plannedMillis)
     }
 
     private fun calculateActualDuration(): Long = actualStudyMillis() / 60000L
 
     private fun saveSession(status: String) {
+        btnEnd.isEnabled = false;
+        btnPause.isEnabled = false;
+        btnStart.isEnabled = false;
+        btnResume.isEnabled = false;
         if (sessionSaved || isSaving) return
         if (sessionId.isBlank()) {
             Toast.makeText(this, "Setting up the session, please wait", Toast.LENGTH_SHORT).show()
@@ -260,7 +249,11 @@ class SessionTracker : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this@SessionTracker, "Network error. Press End to retry.", Toast.LENGTH_LONG).show()
             } finally {
-                isSaving = false
+                isSaving = false;
+                btnPause.isEnabled = true;
+                btnStart.isEnabled = true;
+                btnResume.isEnabled = true;
+                btnEnd.isEnabled = true;
                 updateButtons()
             }
         }
@@ -277,18 +270,22 @@ class SessionTracker : AppCompatActivity() {
 
     private fun updateProgress() {
         if (plannedMillis <= 0L) return
-
-        val fraction = actualStudyMillis().toFloat() / plannedMillis
-        val percent = (fraction * 100).toInt().coerceIn(0, 100)
-        val color = progressColor(fraction)
-
-        circularProgress.setProgressCompat(percent, true)
-        circularProgress.setIndicatorColor(color)
-
-        sessionProgress.setProgressCompat(percent, true)
-        sessionProgress.setIndicatorColor(color)
-        txtSessionPercent.text = "$percent% of planned time"
-
+        val overallFraction = (actualStudyMillis().toFloat() / plannedMillis).coerceIn(0f, 1f)
+        val overallPercent = (overallFraction * 100).toInt()
+        val cycleFraction = if (isBreakPhase) {
+            1f
+        } else if (currentStudyBlock > 0L) {
+            ((currentStudyBlock - remainingTime).toFloat() /
+                    currentStudyBlock).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+        val cyclePercent = (cycleFraction * 100).toInt()
+        circularProgress.setProgressCompat(cyclePercent, true)
+        circularProgress.setIndicatorColor(progressColor(cycleFraction))
+        sessionProgress.setProgressCompat(overallPercent, true)
+        sessionProgress.setIndicatorColor(progressColor(overallFraction))
+        txtSessionPercent.text = "$overallPercent% of planned time"
         updateSessionCard()
     }
 
@@ -307,7 +304,8 @@ class SessionTracker : AppCompatActivity() {
     }
 
     private fun updateTimerDisplay(time: Long) {
-        txtTimer.text = formatTime(time)
+        val phase = if (isBreakPhase) "BREAK" else "STUDY"
+        txtTimer.text = "$phase\n${formatTime(time)}"
     }
 
     private fun formatTime(milliseconds: Long): String {

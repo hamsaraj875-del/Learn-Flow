@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    private const val BASE_URL = "https://learn-flow-4nqd.onrender.com/"
+    private const val BASE_URL = "http://10.120.153.143:3000/"
 
     @Volatile
     private var initialized = false

@@ -198,6 +198,9 @@ class Chat : AppCompatActivity() {
                 val questionBody = mes.toRequestBody(
                     "text/plain".toMediaType()
                 )
+                val conversationIdBody = conversationId.toString().toRequestBody(
+                    "text/plain".toMediaType()
+                )
                 lifecycleScope.launch {
                     typingIndicator.visibility = View.VISIBLE
                     btnSend.isEnabled = false
@@ -205,7 +208,8 @@ class Chat : AppCompatActivity() {
                     try {
                         val response = chatRepository.uploadDocument(
                             pdfPart,
-                            questionBody
+                            questionBody,
+                            conversationId,
                         )
                         messages.add(Message(false, response.response))
                         messageAdapter.notifyItemInserted(messages.lastIndex)

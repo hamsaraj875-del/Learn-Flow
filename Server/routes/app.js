@@ -14,6 +14,7 @@ const MongoStore = require("connect-mongo").default;
 
 const controller  = require("../controllers/controller");
 const aiResponseController = require("../controllers/aiResponseController");
+
 const PORT = process.env.PORT || 3000;
 const db = process.env.DB
 
@@ -40,23 +41,26 @@ app.use(session({
 
 
 //file handling in the uploads folder 
-
 const storage = multer.diskStorage({
-    destination:(req,res,cb)=>{
-        cb(null,'uploads');
+    destination: (req, file, cb) => {
+        cb(null, "uploads/");
     },
-    filename:(req,file,cb)=>{
-        cb(null,new Date().toString()+'-'+file.originalname);
+    filename: (req, file, cb) => {
+        const documentId = new mongoose.Types.ObjectId();
+        req.documentId = documentId;
+        cb(null, `${documentId}.pdf`);
     }
-})
+});
 
-const fileFilter = (req,file,cb)=>{
-    if(['application/pdf'].includes(file.mimetype)){
-        cb(null,true);
-    }else{
-        cb(null,false);
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+        cb(null, true);
+    } else {
+        cb(new Error("Only PDF files are allowed"), false);
     }
-}
+};
+
+const upload = multer({ storage, fileFilter });
 
 
 //configuations

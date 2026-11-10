@@ -92,6 +92,7 @@ interface LearnFlowApi {
     @POST("document")
     suspend fun uploadDocument(
         @Part pdf: MultipartBody.Part,
-        @Part("question") question: RequestBody
+        @Part("question") question: RequestBody,
+        @Part("conversationId") conversationId: String,
     ): ChatResponse
 }
