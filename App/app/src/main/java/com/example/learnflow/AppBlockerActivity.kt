@@ -1,13 +1,16 @@
-
 package com.example.learnflow
 
-import android.content.ComponentName
+import android.Manifest
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Process
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,15 +20,14 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class AppBlockerActivity : AppCompatActivity() {
-
-    companion object {
-        const val EXTRA_BLOCKED_APP = "blocked_app"
-    }
 
     private lateinit var appsRecyclerView: RecyclerView
     private lateinit var btnEnable: Button
@@ -33,7 +35,6 @@ class AppBlockerActivity : AppCompatActivity() {
     private lateinit var permissionCard: LinearLayout
 
     private val selectedApps = mutableSetOf<String>()
-    private lateinit var appAdapter: AppAdapter
 
     data class AppInfo(
         val packageName: String,
@@ -43,14 +44,6 @@ class AppBlockerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val blockedApp = intent.getStringExtra(EXTRA_BLOCKED_APP)
-
-        if (blockedApp != null) {
-            showBlockedScreen(blockedApp)
-            return
-        }
-
         setContentView(R.layout.activity_app_blocker)
 
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
@@ -60,106 +53,135 @@ class AppBlockerActivity : AppCompatActivity() {
 
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        selectedApps.addAll(
-            getSharedPreferences("blocker", MODE_PRIVATE)
-                .getStringSet("apps", emptySet()) ?: emptySet()
-        )
+        val savedApps = getSharedPreferences("blocker", MODE_PRIVATE)
+            .getStringSet("apps", emptySet()) ?: emptySet()
+
+        selectedApps.addAll(savedApps)
 
         btnEnable.setOnClickListener {
-            if (isAccessibilityPermissionGranted()) {
+            if (allPermissionsGranted()) {
                 toast("Permission already granted")
             } else {
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                showPermissionDisclosure()
             }
         }
+
         findViewById<Button>(R.id.btnStart).setOnClickListener {
+
             if (selectedApps.isEmpty()) {
                 toast("Select at least one app")
                 return@setOnClickListener
             }
-            if (!isAccessibilityPermissionGranted()) {
-                toast("Enable LearnFlow accessibility service")
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+
+            if (!allPermissionsGranted()) {
+                showPermissionDisclosure()
                 return@setOnClickListener
             }
+
             saveApps()
+
             getSharedPreferences("blocker", MODE_PRIVATE)
                 .edit()
                 .putBoolean("active", true)
                 .apply()
+
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, AppBlockerService::class.java)
+            )
+
             toast("Focus Mode started")
         }
+
         findViewById<Button>(R.id.btnStop).setOnClickListener {
+
             getSharedPreferences("blocker", MODE_PRIVATE)
                 .edit()
                 .putBoolean("active", false)
                 .apply()
+
+            stopService(Intent(this, AppBlockerService::class.java))
+
             toast("Focus Mode stopped")
         }
+
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100
+            )
+        }
+
         loadApps()
         updateSelectedCount()
     }
 
     override fun onResume() {
         super.onResume()
+
         if (::btnEnable.isInitialized) {
-            val granted = isAccessibilityPermissionGranted()
-            btnEnable.text = if (granted) "Permission Granted" else "Grant Permission"
-            permissionCard.visibility = if (granted) View.GONE else View.VISIBLE
-        }
-    }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        intent.getStringExtra(EXTRA_BLOCKED_APP)?.let {
-            showBlockedScreen(it)
-        }
-    }
+            val granted = allPermissionsGranted()
 
-    private fun showBlockedScreen(appName: String) {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(32, 32, 32, 32)
-            setBackgroundColor(Color.BLACK)
-        }
-        val title = TextView(this).apply {
-            text = "Focus Mode Active"
-            textSize = 28f
-            setTextColor(Color.rgb(255, 152, 0))
-            gravity = Gravity.CENTER
-        }
-        val message = TextView(this).apply {
-            text = "$appName is blocked during your study session."
-            textSize = 18f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(0, 30, 0, 30)
-        }
-        val button = Button(this).apply {
-            text = "Return to Home"
-            setOnClickListener {
-                val home = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                }
-                startActivity(home)
-                finish()
+            btnEnable.text = if (granted) {
+                "Permission Granted"
+            } else {
+                "Grant Permission"
+            }
+
+            permissionCard.visibility = if (granted) {
+                View.GONE
+            } else {
+                View.VISIBLE
             }
         }
-        layout.addView(title)
-        layout.addView(message)
-        layout.addView(button)
-        setContentView(layout)
+    }
+
+    private fun showPermissionDisclosure() {
+
+        val needUsage = !hasUsageAccess()
+
+        AlertDialog.Builder(this)
+            .setTitle("Enable Focus Mode")
+            .setMessage(
+                "LearnFlow needs two permissions:\n\n" +
+                        "1. Usage access: to detect which app is open, " +
+                        "so it can compare it with the apps you selected.\n\n" +
+                        "2. Display over other apps: to show the focus " +
+                        "screen on top of a blocked app.\n\n" +
+                        "This check happens only on your device. LearnFlow does " +
+                        "not read your screen and does not upload your app activity."
+            )
+            .setPositiveButton("Continue") { _, _ ->
+                if (needUsage) {
+                    startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                } else {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                    )
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun loadApps() {
+
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
+
         val apps = packageManager.queryIntentActivities(intent, 0)
             .distinctBy { it.activityInfo.packageName }
-            .filter { it.activityInfo.packageName != packageName }
+            .filter {
+                it.activityInfo.packageName != packageName
+            }
             .map {
                 AppInfo(
                     packageName = it.activityInfo.packageName,
@@ -167,12 +189,15 @@ class AppBlockerActivity : AppCompatActivity() {
                     appIcon = it.loadIcon(packageManager)
                 )
             }
-            .sortedBy { it.appName.lowercase() }
-        appAdapter = AppAdapter(apps)
-        appsRecyclerView.adapter = appAdapter
+            .sortedBy {
+                it.appName.lowercase()
+            }
+
+        appsRecyclerView.adapter = AppAdapter(apps)
     }
 
     private fun saveApps() {
+
         getSharedPreferences("blocker", MODE_PRIVATE)
             .edit()
             .putStringSet("apps", selectedApps.toSet())
@@ -183,24 +208,18 @@ class AppBlockerActivity : AppCompatActivity() {
         txtSelectedCount.text = "${selectedApps.size} selected"
     }
 
-    private fun isAccessibilityPermissionGranted(): Boolean {
-        val componentName = ComponentName(
-            this,
-            AppBlockerService::class.java
+    private fun hasUsageAccess(): Boolean {
+        val ops = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = ops.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            packageName
         )
-
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        return enabledServices.split(":").any {
-            it.equals(
-                componentName.flattenToString(),
-                ignoreCase = true
-            )
-        }
+        return mode == AppOpsManager.MODE_ALLOWED
     }
+
+    private fun allPermissionsGranted(): Boolean =
+        hasUsageAccess() && Settings.canDrawOverlays(this)
 
     private fun toast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -213,17 +232,28 @@ class AppBlockerActivity : AppCompatActivity() {
         inner class AppViewHolder(view: View) :
             RecyclerView.ViewHolder(view) {
 
-            val appIcon: ImageView = view.findViewById(R.id.imgAppIcon)
-            val appName: TextView = view.findViewById(R.id.txtAppName)
-            val checkBox: CheckBox = view.findViewById(R.id.checkApp)
+            val appIcon: ImageView =
+                view.findViewById(R.id.imgAppIcon)
+
+            val appName: TextView =
+                view.findViewById(R.id.txtAppName)
+
+            val checkBox: CheckBox =
+                view.findViewById(R.id.checkApp)
         }
 
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
         ): AppViewHolder {
+
             val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_blocker_app, parent, false)
+                .inflate(
+                    R.layout.item_blocker_app,
+                    parent,
+                    false
+                )
+
             return AppViewHolder(view)
         }
 
@@ -231,12 +261,19 @@ class AppBlockerActivity : AppCompatActivity() {
             holder: AppViewHolder,
             position: Int
         ) {
+
             val app = apps[position]
+
             holder.appIcon.setImageDrawable(app.appIcon)
             holder.appName.text = app.appName
+
             holder.checkBox.setOnCheckedChangeListener(null)
-            holder.checkBox.isChecked = selectedApps.contains(app.packageName)
+
+            holder.checkBox.isChecked =
+                selectedApps.contains(app.packageName)
+
             holder.checkBox.setOnCheckedChangeListener { _, checked ->
+
                 if (checked) {
                     selectedApps.add(app.packageName)
                 } else {
@@ -246,10 +283,13 @@ class AppBlockerActivity : AppCompatActivity() {
                 saveApps()
                 updateSelectedCount()
             }
+
             holder.itemView.setOnClickListener {
-                holder.checkBox.isChecked = !holder.checkBox.isChecked
+                holder.checkBox.isChecked =
+                    !holder.checkBox.isChecked
             }
         }
+
         override fun getItemCount(): Int = apps.size
     }
 }

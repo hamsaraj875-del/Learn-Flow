@@ -15,6 +15,8 @@ import com.example.learnflow.data.model.Response
 import com.example.learnflow.data.model.Session
 import com.example.learnflow.data.model.SessionList
 import com.example.learnflow.data.model.SignUpRequest
+import com.example.learnflow.data.model.TestCreate
+import com.example.learnflow.data.model.TestQuestionList
 import com.example.learnflow.data.model.UserAnalysis
 import com.example.learnflow.data.model.userData
 import okhttp3.MultipartBody
@@ -88,11 +90,23 @@ interface LearnFlowApi {
         @Body request: MessageHistoryRequest
     ): MessageList
 
+    @POST("test")
+    suspend fun createTest(
+        @Body request: TestCreate
+    ): TestQuestionList;
+
+    @Multipart
+    @POST("test/document")
+    suspend fun createDocumentTest(
+        @Part pdf:MultipartBody.Part,
+        @Part("question") request:TestCreate,
+    ):TestQuestionList;
+
     @Multipart
     @POST("document")
     suspend fun uploadDocument(
         @Part pdf: MultipartBody.Part,
         @Part("question") question: RequestBody,
-        @Part("conversationId") conversationId: String,
+        @Part("conversationId") conversationId: RequestBody,
     ): ChatResponse
 }

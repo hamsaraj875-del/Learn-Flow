@@ -39,7 +39,7 @@ class ChatRepository(
     suspend fun uploadDocument(
         pdf: MultipartBody.Part,
         question: RequestBody,
-        conversationId: String
+        conversationId: RequestBody
     ): ChatResponse {
         return api.uploadDocument(pdf, question,conversationId)
     }

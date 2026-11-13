@@ -1,6 +1,6 @@
 //external modules
 
-
+const supabase = require("../services/supabase");
 
 //internal modules
 

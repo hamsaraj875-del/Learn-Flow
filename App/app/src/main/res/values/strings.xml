@@ -6,10 +6,6 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="app_blocker_description">
-        Detects when a selected app is opened during Focus Mode.
-    </string>
-
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

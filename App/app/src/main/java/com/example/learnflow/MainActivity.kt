@@ -31,6 +31,7 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -40,11 +41,12 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var userId:String;
     private lateinit var loginRepository:LoginRepository;
-    private lateinit var progressBar:ProgressBar;
+    private lateinit var loaderContainer: FrameLayout
     private lateinit var btn:FrameLayout;
     private lateinit var greeting:TextView;
     private lateinit var txtAccuracy:TextView;
     private lateinit var txtConsistancy:TextView;
+    private lateinit var btnTakeTest: MaterialButton;
     private lateinit var txtStreak:TextView;
     private lateinit var txtCount :TextView;
     private lateinit var sessionRepository : SessionRepository;
@@ -76,7 +78,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        progressBar = findViewById(R.id.loader)
+        loaderContainer = findViewById(R.id.loaderContainer)
         btn = findViewById(R.id.navAI)
         greeting = findViewById(R.id.txtGreeting);
         txtCount = findViewById(R.id.txtCount);
@@ -86,12 +88,12 @@ class MainActivity : AppCompatActivity() {
         var focus = findViewById<LinearLayout>(R.id.navFocus)
         var session = findViewById<LinearLayout>(R.id.navSession);
         performanceChart = findViewById(R.id.performanceChart)
+        btnTakeTest = findViewById(R.id.btnTakeTest);
 
         sessionRepository = SessionRepository(RetrofitClient.api);
         loginRepository = LoginRepository(RetrofitClient.api)
         btn.visibility = View.GONE
-
-
+        showLoader()
         initializeGraph()
         userLoginCheck();
 
@@ -106,6 +108,15 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        btnTakeTest.setOnClickListener{
+            if(userId.isEmpty()){
+                Toast.makeText(this@MainActivity,"please wait we are setting up",Toast.LENGTH_SHORT).show();
+                return@setOnClickListener;
+            }
+            var intent = Intent(this@MainActivity,TestCreator::class.java);
+            startActivity(intent);
+        }
+
         session.setOnClickListener{
             if(userId.isEmpty()){
                 Toast.makeText(this@MainActivity,"please wait we are setting up",Toast.LENGTH_SHORT).show();
@@ -117,31 +128,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun userLoginCheck(){
+    private fun userLoginCheck() {
         lifecycleScope.launch {
             try {
-                var response = loginRepository.userIsLoggedIn()
+                val response = loginRepository.userIsLoggedIn()
                 if (!response.success) {
-                    var intent = Intent(this@MainActivity, Promo::class.java)
+                    hideLoader();
+                    val intent = Intent(this@MainActivity, Promo::class.java)
                     startActivity(intent)
-                    finish();
+                    finish()
                     return@launch
-                } else {
-                    userId = response.userId
-                    if(userId.isEmpty()){
-                        Toast.makeText(this@MainActivity,"Setting up the app ,please wait a while",Toast.LENGTH_SHORT).show();
-                        return@launch;
-                    }
-                    progressBar.visibility = View.GONE
-                    btn.visibility = View.VISIBLE
-                    greeting.text = "Hello, ${response.name}! "+greeting.text.toString();
-                    userAnalysis();
                 }
+                userId = response.userId
+                if (userId.isEmpty()) {
+                    hideLoader();
+                    Toast.makeText(this@MainActivity, "Setting up the app, please wait", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                btn.visibility = View.VISIBLE
+                greeting.text = "Hello, ${response.name}! " + greeting.text.toString()
+                userAnalysis()
             } catch (e: Exception) {
-                var intent = Intent(this@MainActivity, Promo::class.java)
+                hideLoader();
+                val intent = Intent(this@MainActivity, Promo::class.java)
                 startActivity(intent)
-            } finally {
-                progressBar.visibility = View.GONE
+                finish()
             }
         }
     }
@@ -159,11 +170,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }catch(e:Exception){
                 println(e.message);
+            }finally{
+                hideLoader();
             }
         }
     }
 
-    private fun sessionList(){
+    private suspend fun sessionList(){
         lifecycleScope.launch{
             try{
                 var response = sessionRepository.sessionList(Request(userId));
@@ -181,6 +194,15 @@ class MainActivity : AppCompatActivity() {
         if (::userId.isInitialized && userId.isNotEmpty()) {
             userAnalysis()
         }
+    }
+
+    private fun showLoader() {
+        loaderContainer.visibility = View.VISIBLE
+        loaderContainer.bringToFront()
+    }
+
+    private fun hideLoader() {
+        loaderContainer.visibility = View.GONE
     }
 
 

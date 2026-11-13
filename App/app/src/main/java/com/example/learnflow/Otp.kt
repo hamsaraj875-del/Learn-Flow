@@ -51,6 +51,31 @@ class Otp : AppCompatActivity() {
 
         verifyLoader.visibility = View.GONE;
 
+
+        val otpFields = listOf(etOtp1, etOtp2, etOtp3, etOtp4, etOtp5, etOtp6)
+
+        for (i in otpFields.indices) {
+            otpFields[i].addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    if (s?.length == 1 && i < otpFields.size - 1) {
+                        otpFields[i + 1].requestFocus()
+                    }
+                }
+                override fun afterTextChanged(s: android.text.Editable?) {}
+            })
+            otpFields[i].setOnKeyListener { _, keyCode, event ->
+                if (keyCode == android.view.KeyEvent.KEYCODE_DEL &&
+                    event.action == android.view.KeyEvent.ACTION_DOWN &&
+                    otpFields[i].text.isEmpty() && i > 0
+                ) {
+                    otpFields[i - 1].requestFocus()
+                    otpFields[i - 1].setSelection(otpFields[i - 1].text.length)
+                }
+                false
+            }
+        }
+
         btnVerify.setOnClickListener{
             if(etOtp1.text.toString().isEmpty() || etOtp2.text.toString().isEmpty() || etOtp3.text.toString().isEmpty() || etOtp4.text.toString().isEmpty() || etOtp5.text.toString().isEmpty() || etOtp6.text.toString().isEmpty()){
                 Toast.makeText(this@Otp,"Otp fields cannot be empty",Toast.LENGTH_SHORT).show();

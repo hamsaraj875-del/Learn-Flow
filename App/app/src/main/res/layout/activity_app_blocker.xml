@@ -43,6 +43,7 @@
     </LinearLayout>
 
     <!-- Permission Card -->
+    <!-- Permission Card -->
     <LinearLayout
         android:id="@+id/permissionCard"
         android:layout_width="0dp"
@@ -59,7 +60,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="App monitoring permission"
+            android:text="Two permissions needed"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"/>
@@ -68,9 +69,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:text="Required to detect when you open selected apps."
+            android:text="1. Usage access: lets LearnFlow detect when you open a selected app.\n2. Display over other apps: lets LearnFlow show the focus screen on top of it.\n\nLearnFlow only checks which app is open. It does not read your screen or your data."
             android:textColor="#999999"
-            android:textSize="12sp"/>
+            android:textSize="12sp"
+            android:lineSpacingExtra="2dp"/>
 
         <Button
             android:id="@+id/btnEnable"

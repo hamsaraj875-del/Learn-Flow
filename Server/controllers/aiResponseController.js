@@ -41,40 +41,49 @@ exports.openAiResult = async (req, res, next) => {
             role: message.role,
             content: String(message.content)
         }));
-
-
         const type = await classifier(question.question,conversation.slice(0,-1));
         console.log(type);
-        if(type=="PDF" || type=="MIXED"){
-            const pdf = await pdfFinder(req.session.userId,question.conversationId);
-
-            if (!pdf) {
-                console.log("pdf not found");
+        if (type == "PDF" || type == "MIXED") {
+            const pdfs = await pdfFinder(
+                req.session.userId,
+                question.conversationId
+            );
+            if (pdfs.length === 0) {
                 return res.status(200).json({
                     response: "Please upload a PDF in this conversation so I can answer your question from it."
                 });
             }
-
-            const queryEmbeddings = (await generateEmbeddings([question.question]))[0];
-            const context = await chunkFinder(question.conversationId,queryEmbeddings);
+            const queryEmbedding = await generateQueryEmbedding(question.question);
+            const context = await chunkFinder(
+                req.session.userId,
+                pdfs,
+                queryEmbedding
+            );
             const prompt = [
                 {
                     role: "user",
                     content: `
-                    Document Context:
-                    ${context}
+                        Document Context:
+                        ${context}
 
-                    Question:
-                    ${question.question}
-                `
+                        Question:
+                        ${question.question}
+                    `
                 }
             ];
             const answer = await generateRagResponse(prompt);
+            const assistantMessage = new messages({
+                conversationId: question.conversationId,
+                userId: req.session.userId,
+                role: "assistant",
+                content: answer
+            });
+            await assistantMessage.save();
             return res.status(200).json({
-                response:answer
-            })
-
-        }else{
+                response: answer
+            });
+        }
+        else{
             console.log("===conversation===");
             const response = await generateResponse(conversation);
 
@@ -102,44 +111,44 @@ exports.openAiResult = async (req, res, next) => {
 
 //pdf finder in the conversation
 
-const pdfFinder = async(userId,conversationId)=>{
-    try{
-        const pdf = await documents.findOne({userId:userId,conversationId:conversationId}).sort({_id:-1});
-        return pdf || null;
-    }
-    catch(err){
+const pdfFinder = async (userId, conversationId) => {
+    try {
+        const pdfs = await documents.find({
+            userId: userId,
+            conversationId: conversationId
+        });
+        return pdfs;
+    } catch (err) {
         console.log(err);
-        return null;
+        return [];
     }
-}
+};
 
 
-//chunk finder in the document for document based response
+//chunk finder in the database
 
-const chunkFinder = async(conversationId,queryEmbeddings)=>{
-    try{
-        const chunks = await documents.find({userId:req.session.userId,conversationId:conversationId}).select("text embedding chunkIndex")
-        const results = chunks.map((chunk, index) => ({
+const chunkFinder = async (userId, pdfs, queryEmbedding) => {
+    try {
+        const documentIds = pdfs.map(pdf => pdf._id);
+        const chunks = await textChunk.find({
+            userId: userId,
+            documentId: { $in: documentIds }
+        }).select("text embedding chunkIndex");
+        const results = chunks.map(chunk => ({
             text: chunk.text,
             score: cosineSimilarity(
-                queryEmbeddings,
-                pdfEmbeddings[index]
+                queryEmbedding,
+                chunk.embedding
             )
         }));
         results.sort((a, b) => b.score - a.score);
         const relevantChunks = results.slice(0, 5);
-        const context = relevantChunks.map(chunk => chunk.text).join("\n\n");
-
-        if(context){
-            return context;
-        }
-        return "";
-    }catch(err){
+        return relevantChunks.map(chunk => chunk.text).join("\n\n");
+    } catch (err) {
         console.log(err);
         return "";
     }
-}
-
+};
 
 //user document handled responses
 
@@ -154,15 +163,15 @@ exports.documentOpenAiResult=async(req,res,next)=>{
         })
     }
 
-    const document = new documents({_id:req.documentId,userId:req.session.userId,conversationId:conversationId,fileName:pdf.originalname,filePath:pdf.path})
+    const document = new documents({_id:req.documentId,userId:req.session.userId,conversationId:conversationId,fileName:pdf.originalname,filePath:req.filePath})
     await document.save();
-    const pdfBuffer = fs.readFileSync(pdf.path);
+    const pdfBuffer = pdf.buffer;
     console.log("===question is recieved with the document===");
     try{
         const pdfText = await extractPdfText(pdfBuffer);
         const chunks = await textChunker(pdfText);
         const pdfEmbeddings = await generateEmbeddings(chunks);
-        const queryEmbeddings = (await generateEmbeddings([question]))[0];
+        const queryEmbeddings = await generateQueryEmbedding(question);
 
         const chunkDocuments = chunks.map((chunk, index) => ({
             documentId: req.documentId,
@@ -197,6 +206,11 @@ exports.documentOpenAiResult=async(req,res,next)=>{
             }
         ];
         const answer = await generateRagResponse(prompt);
+
+        const userMes = new messages({conversationId:conversationId,userId:req.session.userId,role:"user",content:question});
+        await userMes.save();
+        const aiMes = new messages({conversationId:conversationId,userId:req.session.userId,role:"assistant",content:answer});
+        await aiMes.save();
         return res.status(200).json({
             response:answer
         })

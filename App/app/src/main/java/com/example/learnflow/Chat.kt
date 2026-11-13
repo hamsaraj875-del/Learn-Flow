@@ -198,7 +198,7 @@ class Chat : AppCompatActivity() {
                 val questionBody = mes.toRequestBody(
                     "text/plain".toMediaType()
                 )
-                val conversationIdBody = conversationId.toString().toRequestBody(
+                val conversationId = conversationId.toString().toRequestBody(
                     "text/plain".toMediaType()
                 )
                 lifecycleScope.launch {
