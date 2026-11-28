@@ -1,0 +1,104 @@
+package com.example.learnflow.signup
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatButton
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.learnflow.R
+import com.example.learnflow.data.model.SignUpRequest
+import com.example.learnflow.data.remote.RetrofitClient
+import com.example.learnflow.data.repository.LoginRepository
+import kotlinx.coroutines.launch
+
+class SignUp : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_sign_up)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        var login : TextView;
+        var editName : EditText;
+        var editEmail : EditText;
+        var editPassword : EditText;
+        var btnSignUp : AppCompatButton;
+        var signupLoader : ProgressBar;
+
+        login = findViewById(R.id.tvLogin);
+        editName = findViewById(R.id.etName);
+        editEmail = findViewById(R.id.etEmail);
+        editPassword = findViewById(R.id.etPassword);
+        btnSignUp = findViewById(R.id.btnSignup);
+        signupLoader = findViewById(R.id.signupLoader);
+        var LoginRepository = LoginRepository(RetrofitClient.api);
+
+        login.setOnClickListener{
+            var intent = Intent(this@SignUp, Login::class.java);
+            startActivity(intent);
+            finish();
+        }
+
+
+        btnSignUp.setOnClickListener {
+            val name = editName.text.toString().trim()
+            val email = editEmail.text.toString().trim()
+            val password = editPassword.text.toString();
+
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(
+                    this@SignUp,
+                    "Fields cannot be empty",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                btnSignUp.text = ""
+                signupLoader.visibility = View.VISIBLE
+                btnSignUp.isEnabled = false
+                lifecycleScope.launch {
+                    try {
+                        val response = LoginRepository.signUp(
+                            SignUpRequest(name, email, password)
+                        )
+                        if (response.success) {
+                            val intent = Intent(this@SignUp, Otp::class.java)
+                            intent.putExtra("email", email)
+                            startActivity(intent)
+                            finish();
+                        } else {
+                            Toast.makeText(
+                                this@SignUp,
+                                "Signup failed. Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this@SignUp,
+                            "Error: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        signupLoader.visibility = View.GONE
+                        btnSignUp.text = "Create Account  →"
+                        btnSignUp.isEnabled = true
+                    }
+                }
+            }
+        }
+
+
+    }
+}

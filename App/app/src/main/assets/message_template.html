@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="katex/katex.min.css">
+    <script src="katex/katex.min.js"></script>
+    <script src="katex/contrib/auto-render.min.js"></script>
+    <script src="marked.min.js"></script>
+    <script src="purify.min.js"></script>
+
+    <style>
+        :root { color-scheme: light dark; }
+        html, body { margin: 0; padding: 0; background: transparent; }
+        body {
+          font-family: sans-serif;
+          font-size: 16px;
+          line-height: 1.5;
+          color: #1f1f1f;
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+        }
+        @media (prefers-color-scheme: dark) {
+          body { color: #e8e8e8; }
+          th, td { border-color: #555 !important; }
+          code, pre { background: #2b2b2b !important; }
+        }
+        #content > :first-child { margin-top: 0; }
+        #content > :last-child { margin-bottom: 0; }
+        p { margin: 0 0 8px 0; }
+        ul, ol { margin: 4px 0 8px 0; padding-left: 22px; }
+        table { border-collapse: collapse; margin: 8px 0; display: block; overflow-x: auto; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; }
+        pre { background: #f2f2f2; padding: 10px; border-radius: 8px; overflow-x: auto; }
+        code { background: #f2f2f2; padding: 1px 4px; border-radius: 4px; font-size: 14px; }
+        pre code { padding: 0; background: transparent; }
+        .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+    </style>
+</head>
+<body>
+<div id="content"></div>
+
+<script>
+    var MATH_PATTERN =
+      /\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$(?!\s)[^$\n]+?\$/g;
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderMessage(md) {
+      var el = document.getElementById('content');
+
+      // 1. Pull math out so Markdown can't eat backslashes/underscores
+      var store = [];
+      var protectedMd = md.replace(MATH_PATTERN, function (m) {
+        store.push(m);
+        return 'MATHPLACEHOLDER' + (store.length - 1) + 'END';
+      });
+
+      // 2. Markdown -> HTML (raw <br> from the AI passes through)
+      var html = marked.parse(protectedMd, { breaks: true });
+
+      // 3. Put math back (HTML-escaped so < > & inside math are safe)
+      html = html.replace(/MATHPLACEHOLDER(\d+)END/g, function (_, i) {
+        return escapeHtml(store[parseInt(i, 10)]);
+      });
+
+      // 4. Sanitize and insert
+      el.innerHTML = DOMPurify.sanitize(html);
+
+      // 5. Render math
+      renderMathInElement(el, {
+        delimiters: [
+          { left: '$$',  right: '$$',  display: true  },
+          { left: '\\[', right: '\\]', display: true  },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '$',   right: '$',   display: false }
+        ],
+        throwOnError: false
+      });
+    }
+</script>
+</body>
+</html>
